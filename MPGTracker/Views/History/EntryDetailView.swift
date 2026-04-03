@@ -39,10 +39,9 @@ struct EntryDetailView: View {
         .sheet(isPresented: $isEditing) {
             EditEntrySheetView(entry: entry)
         }
-        .confirmationDialog(
+        .alert(
             String(localized: "Delete this fill-up?"),
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
+            isPresented: $showDeleteConfirmation
         ) {
             Button(String(localized: "Delete"), role: .destructive) {
                 modelContext.delete(entry)
