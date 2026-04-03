@@ -1,0 +1,270 @@
+//
+//  EntryDetailView.swift
+//  MPGTracker
+//
+//  Created by Devin Kott on 4/2/26.
+//
+
+import SwiftUI
+import SwiftData
+
+/// Shows all fields for a single fill-up entry.
+///
+/// Clearly distinguishes app-calculated values from user-entered data.
+/// Provides toolbar actions for editing and deleting the entry.
+struct EntryDetailView: View {
+
+    @Bindable var entry: FillUpEntry
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var isEditing = false
+    @State private var showDeleteConfirmation = false
+
+    var body: some View {
+        Form {
+            calculatedSection
+            inputsSection
+            dateSection
+            deleteSection
+        }
+        .navigationTitle(String(localized: "Fill-Up Detail"))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(String(localized: "Edit")) { isEditing = true }
+                    .accessibilityLabel(String(localized: "Edit this fill-up entry"))
+            }
+        }
+        .sheet(isPresented: $isEditing) {
+            EditEntrySheetView(entry: entry)
+        }
+        .confirmationDialog(
+            String(localized: "Delete this fill-up?"),
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Delete"), role: .destructive) {
+                modelContext.delete(entry)
+                dismiss()
+            }
+            Button(String(localized: "Cancel"), role: .cancel) {}
+        }
+    }
+
+    // MARK: - Sections
+
+    /// App-calculated values: MPG and price per gallon (if available).
+    private var calculatedSection: some View {
+        Section(String(localized: "App-Calculated")) {
+            detailRow(label: String(localized: "MPG"), value: String(format: "%.2f", entry.calculatedMPG))
+            if let ppg = entry.pricePerGallon {
+                detailRow(label: String(localized: "Price per gallon"), value: String(format: "$%.3f", ppg))
+            }
+        }
+    }
+
+    /// Values entered by the user at the pump.
+    private var inputsSection: some View {
+        Section(String(localized: "You Entered")) {
+            detailRow(label: String(localized: "Miles driven"), value: String(format: "%.1f", entry.milesDriven))
+            detailRow(label: String(localized: "Gallons pumped"), value: String(format: "%.3f", entry.gallonsPumped))
+            if let total = entry.totalPricePaid {
+                detailRow(label: String(localized: "Total price paid"), value: String(format: "$%.2f", total))
+            }
+            if let truckMPG = entry.truckReportedMPG {
+                detailRow(label: String(localized: "Vehicle-reported MPG"), value: String(format: "%.1f", truckMPG))
+            }
+            if let notes = entry.notes {
+                detailRow(label: String(localized: "Notes"), value: notes)
+            }
+        }
+    }
+
+    /// The date and time this fill-up was recorded.
+    private var dateSection: some View {
+        Section(String(localized: "Date")) {
+            detailRow(
+                label: String(localized: "Recorded"),
+                value: entry.date.formatted(date: .long, time: .shortened)
+            )
+        }
+    }
+
+    /// Destructive delete action for this entry.
+    private var deleteSection: some View {
+        Section {
+            Button(String(localized: "Delete Entry"), role: .destructive) {
+                showDeleteConfirmation = true
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .accessibilityLabel(String(localized: "Delete this fill-up entry"))
+            .accessibilityHint(String(localized: "Opens a confirmation before deleting"))
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// A label–value row with combined accessibility support.
+    private func detailRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .multilineTextAlignment(.trailing)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+    }
+}
+
+// MARK: - Edit Sheet
+
+/// Sheet view for editing an existing fill-up entry in place.
+///
+/// Pre-populates text fields from the entry's current values. On save, writes
+/// updated values directly to the `@Bindable` entry — SwiftData auto-persists.
+private struct EditEntrySheetView: View {
+
+    @Bindable var entry: FillUpEntry
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var milesText: String
+    @State private var gallonsText: String
+    @State private var totalPriceText: String
+    @State private var truckMPGText: String
+    @State private var notesText: String
+
+    init(entry: FillUpEntry) {
+        self.entry = entry
+        _milesText = State(initialValue: String(entry.milesDriven))
+        _gallonsText = State(initialValue: String(entry.gallonsPumped))
+        _totalPriceText = State(initialValue: entry.totalPricePaid.map { String($0) } ?? "")
+        _truckMPGText = State(initialValue: entry.truckReportedMPG.map { String($0) } ?? "")
+        _notesText = State(initialValue: entry.notes ?? "")
+    }
+
+    /// `true` when the required fields contain valid, non-zero values.
+    private var isSaveEnabled: Bool {
+        parsedMiles != nil && parsedGallons != nil
+    }
+
+    private var parsedMiles: Double? {
+        guard let v = Double(milesText.trimmingCharacters(in: .whitespaces)), v > 0 else { return nil }
+        return v
+    }
+
+    private var parsedGallons: Double? {
+        guard let v = Double(gallonsText.trimmingCharacters(in: .whitespaces)), v > 0 else { return nil }
+        return v
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                requiredSection
+                optionalSection
+            }
+            .navigationTitle(String(localized: "Edit Fill-Up"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Cancel")) { dismiss() }
+                        .accessibilityLabel(String(localized: "Cancel editing"))
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "Save")) { applyChanges() }
+                        .disabled(!isSaveEnabled)
+                        .accessibilityLabel(
+                            isSaveEnabled
+                                ? String(localized: "Save changes")
+                                : String(localized: "Save changes — enter miles and gallons first")
+                        )
+                }
+            }
+        }
+    }
+
+    // MARK: - Form sections
+
+    /// Required fields: miles driven and gallons pumped.
+    private var requiredSection: some View {
+        Section(String(localized: "Required")) {
+            TextField(String(localized: "Miles driven"), text: $milesText)
+                .keyboardType(.decimalPad)
+                .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
+                .accessibilityLabel(String(localized: "Miles driven"))
+                .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
+
+            TextField(String(localized: "Gallons pumped"), text: $gallonsText)
+                .keyboardType(.decimalPad)
+                .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
+                .accessibilityLabel(String(localized: "Gallons pumped"))
+                .accessibilityHint(String(localized: "Read from the fuel pump display"))
+        }
+    }
+
+    /// Optional fields: total price, vehicle-reported MPG, notes.
+    private var optionalSection: some View {
+        Section(String(localized: "Optional")) {
+            TextField(String(localized: "Total price paid ($)"), text: $totalPriceText)
+                .keyboardType(.decimalPad)
+                .onChange(of: totalPriceText) { _, new in totalPriceText = filterNumeric(new) }
+                .accessibilityLabel(String(localized: "Total price paid"))
+                .accessibilityHint(String(localized: "Total dollar amount at the pump"))
+
+            TextField(String(localized: "Vehicle-reported MPG"), text: $truckMPGText)
+                .keyboardType(.decimalPad)
+                .onChange(of: truckMPGText) { _, new in truckMPGText = filterNumeric(new) }
+                .accessibilityLabel(String(localized: "Vehicle-reported MPG"))
+                .accessibilityHint(String(localized: "MPG shown on the vehicle's dashboard computer"))
+
+            TextField(String(localized: "Notes"), text: $notesText)
+                .accessibilityLabel(String(localized: "Notes"))
+                .accessibilityHint(String(localized: "Optional free-text note about this fill-up"))
+        }
+    }
+
+    // MARK: - Actions
+
+    /// Writes the parsed field values back to the entry and dismisses the sheet.
+    ///
+    /// The `FillUpEntry` `didSet` observers automatically recalculate
+    /// `calculatedMPG` and `pricePerGallon` when the relevant properties change.
+    private func applyChanges() {
+        guard let miles = parsedMiles, let gallons = parsedGallons else { return }
+        entry.milesDriven = miles
+        entry.gallonsPumped = gallons
+        entry.totalPricePaid = Double(totalPriceText.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }
+        entry.truckReportedMPG = Double(truckMPGText.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }
+        let trimmedNotes = notesText.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
+        dismiss()
+    }
+
+    /// Strips any character that is not a digit or decimal point.
+    private func filterNumeric(_ value: String) -> String {
+        value.filter { $0.isNumber || $0 == "." }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: FillUpEntry.self, configurations: config)
+    let entry = FillUpEntry(
+        date: Date(),
+        milesDriven: 312.5,
+        gallonsPumped: 12.8,
+        totalPricePaid: 45.60,
+        truckReportedMPG: 24.1,
+        notes: "Highway trip"
+    )
+    container.mainContext.insert(entry)
+    return NavigationStack {
+        EntryDetailView(entry: entry)
+    }
+    .modelContainer(container)
+}

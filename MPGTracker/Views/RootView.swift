@@ -24,8 +24,7 @@ struct RootView: View {
     /// History tab — scrollable log of past fill-up sessions.
     private var historyTab: some View {
         NavigationStack {
-            Text(String(localized: "History"))
-                .accessibilityLabel(String(localized: "History screen placeholder"))
+            HistoryView()
         }
         .tabItem {
             Label(

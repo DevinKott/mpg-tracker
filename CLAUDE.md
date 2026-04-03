@@ -38,7 +38,9 @@
 - Delete dead code rather than commenting it out.
 
 ## Current State
-- Steps 1–3 complete: data model (`FillUpEntry`), tab shell (`RootView`), and entry form (`AddEntryView`) are implemented.
+- Steps 1–4 complete: data model (`FillUpEntry`), tab shell (`RootView`), entry form (`AddEntryView`), and history screen (`HistoryView`, `EntryDetailView`) are implemented.
 - `MPGCalculator` (caseless enum in `Utilities/`) is the single source of truth for MPG and price-per-gallon math; `FillUpEntry` calls it directly.
 - Numeric text fields use `String` state + `.onChange` filtering (digits and `.` only) rather than `value:format:`, to preserve the empty-vs-zero distinction needed for Save button validation.
 - `truckReportedMPG` is the SwiftData property name (schema-stable); all user-facing strings say "vehicle-reported MPG".
+- History list uses `@Query(sort: \FillUpEntry.date, order: .reverse)` and `NavigationLink(value:)` + `.navigationDestination(for: FillUpEntry.self)`.
+- `EntryDetailView` uses `@Bindable var entry: FillUpEntry`; editing is done via `EditEntrySheetView` (private struct in `EntryDetailView.swift`) which writes back to the bindable entry directly — SwiftData `didSet` observers handle derived value recalculation automatically.

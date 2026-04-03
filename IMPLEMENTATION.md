@@ -131,7 +131,7 @@ MPGTracker/
 
 ---
 
-## Step 4 — History Screen
+## Step 4 — History Screen ✅
 
 **Goal:** Display all saved fill-up entries in reverse chronological order.
 
