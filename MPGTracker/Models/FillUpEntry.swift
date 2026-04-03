@@ -27,7 +27,7 @@ final class FillUpEntry {
         didSet {
             let clamped = max(0, min(1000, milesDriven))
             if clamped != milesDriven { milesDriven = clamped; return }
-            calculatedMPG = Self.deriveMPG(miles: milesDriven, gallons: gallonsPumped)
+            calculatedMPG = MPGCalculator.calculateMPG(miles: milesDriven, gallons: gallonsPumped)
         }
     }
 
@@ -37,8 +37,8 @@ final class FillUpEntry {
         didSet {
             let clamped = max(0, min(100, gallonsPumped))
             if clamped != gallonsPumped { gallonsPumped = clamped; return }
-            calculatedMPG = Self.deriveMPG(miles: milesDriven, gallons: gallonsPumped)
-            pricePerGallon = Self.derivePrice(total: totalPricePaid, gallons: gallonsPumped)
+            calculatedMPG = MPGCalculator.calculateMPG(miles: milesDriven, gallons: gallonsPumped)
+            pricePerGallon = totalPricePaid.flatMap { gallonsPumped > 0 ? MPGCalculator.calculatePricePerGallon(totalPrice: $0, gallons: gallonsPumped) : nil }
         }
     }
 
@@ -48,14 +48,14 @@ final class FillUpEntry {
     /// Total dollar amount paid at the pump, if entered.
     /// Setting this automatically recalculates `pricePerGallon`.
     var totalPricePaid: Double? {
-        didSet { pricePerGallon = Self.derivePrice(total: totalPricePaid, gallons: gallonsPumped) }
+        didSet { pricePerGallon = totalPricePaid.flatMap { gallonsPumped > 0 ? MPGCalculator.calculatePricePerGallon(totalPrice: $0, gallons: gallonsPumped) : nil } }
     }
 
     /// Cost per gallon, derived from `totalPricePaid / gallonsPumped`. `nil` if total price was not entered.
     /// Persisted so the value is available without recalculation.
     var pricePerGallon: Double?
 
-    /// MPG value reported by the truck's onboard computer, for comparison with `calculatedMPG`.
+    /// MPG value reported by the vehicle's onboard computer, for comparison with `calculatedMPG`.
     var truckReportedMPG: Double?
 
     /// Optional free-text note about this fill-up.
@@ -76,23 +76,11 @@ final class FillUpEntry {
         self.date = date
         self.milesDriven = miles
         self.gallonsPumped = gallons
-        self.calculatedMPG = Self.deriveMPG(miles: miles, gallons: gallons)
+        self.calculatedMPG = MPGCalculator.calculateMPG(miles: miles, gallons: gallons)
         self.totalPricePaid = totalPricePaid
-        self.pricePerGallon = Self.derivePrice(total: totalPricePaid, gallons: gallons)
+        self.pricePerGallon = totalPricePaid.flatMap { gallons > 0 ? MPGCalculator.calculatePricePerGallon(totalPrice: $0, gallons: gallons) : nil }
         self.truckReportedMPG = truckReportedMPG
         self.notes = notes
     }
 
-    /// Derives MPG from miles driven and gallons pumped. Returns `0` if gallons is zero.
-    private static func deriveMPG(miles: Double, gallons: Double) -> Double {
-        guard gallons > 0 else { return 0 }
-        return miles / gallons
-    }
-
-    /// Derives price per gallon from a total price and gallon count.
-    /// Returns `nil` if total is `nil` or gallons is zero.
-    private static func derivePrice(total: Double?, gallons: Double) -> Double? {
-        guard gallons > 0 else { return nil }
-        return total.map { $0 / gallons }
-    }
 }

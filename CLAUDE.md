@@ -36,3 +36,9 @@
 - Follow Clean Code principles: meaningful names, single responsibility, DRY, and clear intent.
 - Prefer clarity over cleverness.
 - Delete dead code rather than commenting it out.
+
+## Current State
+- Steps 1–3 complete: data model (`FillUpEntry`), tab shell (`RootView`), and entry form (`AddEntryView`) are implemented.
+- `MPGCalculator` (caseless enum in `Utilities/`) is the single source of truth for MPG and price-per-gallon math; `FillUpEntry` calls it directly.
+- Numeric text fields use `String` state + `.onChange` filtering (digits and `.` only) rather than `value:format:`, to preserve the empty-vs-zero distinction needed for Save button validation.
+- `truckReportedMPG` is the SwiftData property name (schema-stable); all user-facing strings say "vehicle-reported MPG".

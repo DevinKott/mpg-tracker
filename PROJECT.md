@@ -11,7 +11,7 @@ MPGTracker is a personal iOS app for tracking real-world fuel efficiency across 
 Each fill-up session follows a simple loop:
 
 1. Drive until the next fill-up.
-2. At the pump, note the miles driven since the last reset (from the truck's trip odometer).
+2. At the pump, note the miles driven since the last reset (from the vehicle's trip odometer).
 3. Note the exact gallons pumped.
 4. Enter both into the app — it calculates MPG automatically.
 5. Reset the trip odometer. Repeat.
@@ -22,12 +22,12 @@ Each fill-up session follows a simple loop:
 
 | Field | Source | Notes |
 |---|---|---|
-| Miles driven | User input | Read from truck's trip odometer |
+| Miles driven | User input | Read from vehicle's trip odometer |
 | Gallons pumped | User input | Read from the pump |
 | MPG (calculated) | App-derived | `miles ÷ gallons` |
 | Total price paid | User input (optional) | Total cost at the pump |
 | Price per gallon | App-derived or user input | Calculated from total ÷ gallons, or entered manually |
-| Truck-reported MPG | User input (optional) | What the truck's computer displayed — for comparison |
+| Vehicle-reported MPG | User input (optional) | What the vehicle's computer displayed — for comparison |
 | Date | Auto-captured | Timestamp of the entry |
 
 ---
@@ -37,7 +37,7 @@ Each fill-up session follows a simple loop:
 ### Entry
 - Fast, minimal input screen optimized for use at a gas pump.
 - Required fields: miles driven, gallons pumped.
-- Optional fields: total price paid, truck-reported MPG.
+- Optional fields: total price paid, vehicle-reported MPG.
 - App auto-calculates: MPG and price per gallon.
 - Allow manual override of calculated price per gallon.
 
@@ -48,7 +48,7 @@ Each fill-up session follows a simple loop:
 ### Stats & Trends
 - Summary statistics: average MPG, best/worst session, total miles tracked, total fuel cost.
 - Simple charts showing MPG over time.
-- Optional overlay: calculated MPG vs. truck-reported MPG for comparison.
+- Optional overlay: calculated MPG vs. vehicle-reported MPG for comparison.
 - Fuel cost trends over time.
 
 ### Settings & About

@@ -38,8 +38,7 @@ struct RootView: View {
     /// Add Entry tab — primary action; styled with accent color to stand out.
     private var addEntryTab: some View {
         NavigationStack {
-            Text(String(localized: "Add Entry"))
-                .accessibilityLabel(String(localized: "Add Entry screen placeholder"))
+            AddEntryView()
         }
         .tabItem {
             Label(

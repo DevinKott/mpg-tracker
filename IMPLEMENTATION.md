@@ -47,12 +47,12 @@ MPGTracker/
 |---|---|---|---|
 | `id` | `UUID` | yes | Auto-generated |
 | `date` | `Date` | yes | Auto-captured at entry creation |
-| `milesDriven` | `Double` | yes | From truck's trip odometer |
+| `milesDriven` | `Double` | yes | From vehicle's trip odometer |
 | `gallonsPumped` | `Double` | yes | From the pump |
 | `calculatedMPG` | `Double` | yes | Derived: `milesDriven / gallonsPumped` |
 | `totalPricePaid` | `Double?` | no | Total cost at the pump |
 | `pricePerGallon` | `Double?` | no | Derived from total/gallons, or manually entered |
-| `truckReportedMPG` | `Double?` | no | What the truck's computer showed |
+| `truckReportedMPG` | `Double?` | no | What the vehicle's computer showed |
 | `notes` | `String?` | no | Optional free-text note |
 
 **`MPGTrackerApp.swift` changes:**
@@ -92,7 +92,7 @@ MPGTracker/
 
 ---
 
-## Step 3 — Entry Screen
+## Step 3 — Entry Screen ✅
 
 **Goal:** Build the fill-up entry form. This is the most-used screen — keep it fast and minimal.
 
@@ -109,7 +109,7 @@ MPGTracker/
 | Gallons pumped | `TextField` (decimal pad) | yes |
 | Total price paid | `TextField` (decimal pad) | no |
 | Price per gallon | Display (auto-calc) or `TextField` if overriding | no |
-| Truck-reported MPG | `TextField` (decimal pad) | no |
+| Vehicle-reported MPG | `TextField` (decimal pad) | no |
 | Notes | `TextField` (default keyboard) | no |
 
 **Behavior:**
@@ -178,7 +178,7 @@ MPGTracker/
 
 **Charts (use Swift Charts):**
 - MPG over time (line chart, x = date, y = calculated MPG).
-- Optional overlay: truck-reported MPG on the same chart (only shown if any entries have that value).
+- Optional overlay: vehicle-reported MPG on the same chart (only shown if any entries have that value).
 - Fuel cost per gallon over time (line chart, only shown if price data available).
 
 **Chart image export:**
@@ -239,6 +239,11 @@ date, milesDriven, gallonsPumped, calculatedMPG, totalPricePaid, pricePerGallon,
 - Wire `SettingsView` into `RootView`
 
 **Sections:**
+
+**Units**
+- Toggle between miles (MPG) and kilometers (L/100km or km/L — decide at implementation time).
+- Preference stored in `UserDefaults`. All distance/efficiency labels and calculated values across Entry, History, and Stats screens must respect this setting.
+- CSV/JSON export should include a column/field indicating the unit in use, or always export in a canonical unit (decide at implementation time).
 
 **Data**
 - Export as CSV
