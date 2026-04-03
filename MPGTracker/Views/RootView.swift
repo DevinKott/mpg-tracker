@@ -51,8 +51,7 @@ struct RootView: View {
     /// Stats tab — summary statistics and charts.
     private var statsTab: some View {
         NavigationStack {
-            Text(String(localized: "Stats"))
-                .accessibilityLabel(String(localized: "Stats screen placeholder"))
+            StatsView()
         }
         .tabItem {
             Label(
