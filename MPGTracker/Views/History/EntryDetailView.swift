@@ -57,7 +57,7 @@ struct EntryDetailView: View {
     /// App-calculated values: MPG and price per gallon (if available).
     private var calculatedSection: some View {
         Section(String(localized: "App-Calculated")) {
-            detailRow(label: String(localized: "MPG"), value: String(format: "%.2f", entry.calculatedMPG))
+            detailRow(label: String(localized: "MPG"), value: String(format: "%.2f", entry.calculatedMPG), unit: String(localized: "mpg"))
             if let ppg = entry.pricePerGallon {
                 detailRow(label: String(localized: "Price per gallon"), value: String(format: "$%.3f", ppg))
             }
@@ -67,8 +67,8 @@ struct EntryDetailView: View {
     /// Values entered by the user at the pump.
     private var inputsSection: some View {
         Section(String(localized: "You Entered")) {
-            detailRow(label: String(localized: "Miles driven"), value: String(format: "%.1f", entry.milesDriven))
-            detailRow(label: String(localized: "Gallons pumped"), value: String(format: "%.3f", entry.gallonsPumped))
+            detailRow(label: String(localized: "Miles driven"), value: String(format: "%.1f", entry.milesDriven), unit: String(localized: "mi"))
+            detailRow(label: String(localized: "Gallons pumped"), value: String(format: "%.3f", entry.gallonsPumped), unit: String(localized: "gal"))
             if let total = entry.totalPricePaid {
                 detailRow(label: String(localized: "Total price paid"), value: String(format: "$%.2f", total))
             }
@@ -81,16 +81,13 @@ struct EntryDetailView: View {
         }
     }
 
-    /// The date and time this fill-up was recorded. Editable inline via a date picker.
+    /// The date and time this fill-up was recorded. Read-only; edit via the Edit sheet.
     private var dateSection: some View {
         Section(String(localized: "Date")) {
-            DatePicker(
-                String(localized: "Recorded"),
-                selection: $entry.date,
-                displayedComponents: [.date, .hourAndMinute]
+            detailRow(
+                label: String(localized: "Recorded"),
+                value: entry.date.formatted(date: .abbreviated, time: .shortened)
             )
-            .accessibilityLabel(String(localized: "Fill-up date and time"))
-            .accessibilityHint(String(localized: "Tap to change the recorded date and time"))
         }
     }
 
@@ -108,17 +105,21 @@ struct EntryDetailView: View {
 
     // MARK: - Helpers
 
-    /// A label–value row with combined accessibility support.
-    private func detailRow(label: String, value: String) -> some View {
+    /// A label–value row with an optional trailing unit suffix and combined accessibility support.
+    private func detailRow(label: String, value: String, unit: String? = nil) -> some View {
         HStack {
             Text(label)
                 .foregroundStyle(.secondary)
             Spacer()
             Text(value)
                 .multilineTextAlignment(.trailing)
+            if let unit {
+                Text(unit)
+                    .foregroundStyle(.secondary)
+            }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(value)")
+        .accessibilityLabel("\(label): \(value)\(unit.map { " \($0)" } ?? "")")
     }
 }
 
@@ -196,17 +197,35 @@ private struct EditEntrySheetView: View {
     /// Required fields: miles driven, gallons pumped, and fill-up date/time.
     private var requiredSection: some View {
         Section(String(localized: "Required")) {
-            TextField(String(localized: "Miles driven"), text: $milesText)
-                .keyboardType(.decimalPad)
-                .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
-                .accessibilityLabel(String(localized: "Miles driven"))
-                .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
+            HStack {
+                Text(String(localized: "Miles driven"))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TextField("", text: $milesText)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
+                Text(String(localized: "mi"))
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(String(localized: "Miles driven"))
+            .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
 
-            TextField(String(localized: "Gallons pumped"), text: $gallonsText)
-                .keyboardType(.decimalPad)
-                .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
-                .accessibilityLabel(String(localized: "Gallons pumped"))
-                .accessibilityHint(String(localized: "Read from the fuel pump display"))
+            HStack {
+                Text(String(localized: "Gallons pumped"))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TextField("", text: $gallonsText)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
+                Text(String(localized: "gal"))
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(String(localized: "Gallons pumped"))
+            .accessibilityHint(String(localized: "Read from the fuel pump display"))
 
             DatePicker(
                 String(localized: "Date & Time"),
@@ -221,17 +240,35 @@ private struct EditEntrySheetView: View {
     /// Optional fields: total price, vehicle-reported MPG, notes.
     private var optionalSection: some View {
         Section(String(localized: "Optional")) {
-            TextField(String(localized: "Total price paid ($)"), text: $totalPriceText)
-                .keyboardType(.decimalPad)
-                .onChange(of: totalPriceText) { _, new in totalPriceText = filterNumeric(new) }
-                .accessibilityLabel(String(localized: "Total price paid"))
-                .accessibilityHint(String(localized: "Total dollar amount at the pump"))
+            HStack {
+                Text(String(localized: "Total price paid"))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("$")
+                    .foregroundStyle(.secondary)
+                TextField("", text: $totalPriceText)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .onChange(of: totalPriceText) { _, new in totalPriceText = filterNumeric(new) }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(String(localized: "Total price paid"))
+            .accessibilityHint(String(localized: "Total dollar amount at the pump"))
 
-            TextField(String(localized: "Vehicle-reported MPG"), text: $truckMPGText)
-                .keyboardType(.decimalPad)
-                .onChange(of: truckMPGText) { _, new in truckMPGText = filterNumeric(new) }
-                .accessibilityLabel(String(localized: "Vehicle-reported MPG"))
-                .accessibilityHint(String(localized: "MPG shown on the vehicle's dashboard computer"))
+            HStack {
+                Text(String(localized: "Vehicle MPG"))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TextField("", text: $truckMPGText)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .onChange(of: truckMPGText) { _, new in truckMPGText = filterNumeric(new) }
+                Text(String(localized: "mpg"))
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(String(localized: "Vehicle-reported MPG"))
+            .accessibilityHint(String(localized: "MPG shown on the vehicle's dashboard computer"))
 
             TextField(String(localized: "Notes"), text: $notesText)
                 .accessibilityLabel(String(localized: "Notes"))
