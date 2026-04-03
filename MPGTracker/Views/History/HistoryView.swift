@@ -10,12 +10,16 @@ import SwiftData
 
 /// Displays all fill-up entries in reverse chronological order.
 ///
-/// Supports swipe-to-delete and tap-to-navigate for each entry.
+/// Supports swipe-to-delete, multi-select delete, and tap-to-navigate for each entry.
 /// Shows an empty-state prompt when no entries have been saved.
 struct HistoryView: View {
 
     @Query(sort: \FillUpEntry.date, order: .reverse) private var entries: [FillUpEntry]
     @Environment(\.modelContext) private var modelContext
+
+    @State private var editMode: EditMode = .inactive
+    @State private var selection: Set<UUID> = []
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         if entries.isEmpty {
@@ -38,9 +42,9 @@ struct HistoryView: View {
         .accessibilityLabel(String(localized: "No fill-up entries. Tap Add Entry to get started."))
     }
 
-    /// Scrollable list of all fill-up entries.
+    /// Scrollable list of all fill-up entries with multi-select support.
     private var entryList: some View {
-        List {
+        List(selection: $selection) {
             ForEach(entries) { entry in
                 NavigationLink(value: entry) {
                     FillUpEntryRow(entry: entry)
@@ -48,21 +52,100 @@ struct HistoryView: View {
             }
             .onDelete(perform: deleteEntries)
         }
+        .environment(\.editMode, $editMode)
         .navigationTitle(String(localized: "History"))
         .navigationDestination(for: FillUpEntry.self) { entry in
             EntryDetailView(entry: entry)
         }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if editMode.isEditing {
+                    selectAllButton
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
-                    .accessibilityLabel(String(localized: "Toggle edit mode"))
+                if editMode.isEditing {
+                    deleteSelectedButton
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                editDoneButton
             }
         }
+        .confirmationDialog(
+            deleteConfirmationTitle,
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Delete"), role: .destructive) {
+                deleteSelected()
+            }
+            Button(String(localized: "Cancel"), role: .cancel) {}
+        }
+    }
+
+    // MARK: - Toolbar Items
+
+    /// Toggles between "Select All" and "Deselect All" depending on current selection.
+    private var selectAllButton: some View {
+        let allSelected = selection.count == entries.count
+        return Button(allSelected ? String(localized: "Deselect All") : String(localized: "Select All")) {
+            selection = allSelected ? [] : Set(entries.map(\.id))
+        }
+        .accessibilityLabel(allSelected ? String(localized: "Deselect All") : String(localized: "Select All"))
+        .accessibilityHint(
+            allSelected
+                ? String(localized: "Deselects all fill-up entries")
+                : String(localized: "Selects all fill-up entries")
+        )
+    }
+
+    /// Delete button, disabled when nothing is selected.
+    private var deleteSelectedButton: some View {
+        Button(String(localized: "Delete (\(selection.count))"), role: .destructive) {
+            showDeleteConfirmation = true
+        }
+        .disabled(selection.isEmpty)
+        .accessibilityLabel(String(localized: "Delete selected entries"))
+        .accessibilityHint(
+            String(localized: "Deletes \(selection.count) selected fill-up entries. This cannot be undone.")
+        )
+    }
+
+    /// Toggles between "Edit" and "Done".
+    private var editDoneButton: some View {
+        Button(editMode.isEditing ? String(localized: "Done") : String(localized: "Edit")) {
+            editMode = editMode.isEditing ? .inactive : .active
+            if !editMode.isEditing { selection = [] }
+        }
+        .accessibilityLabel(editMode.isEditing ? String(localized: "Done editing") : String(localized: "Edit entries"))
+        .accessibilityHint(
+            editMode.isEditing
+                ? String(localized: "Exits selection mode")
+                : String(localized: "Enters selection mode for bulk deletion")
+        )
     }
 
     // MARK: - Actions
 
-    /// Deletes entries at the given index set from the model context.
+    /// Confirmation dialog title showing how many entries will be deleted.
+    private var deleteConfirmationTitle: String {
+        selection.count == 1
+            ? String(localized: "Delete 1 entry? This cannot be undone.")
+            : String(localized: "Delete \(selection.count) entries? This cannot be undone.")
+    }
+
+    /// Deletes selected entries and exits edit mode.
+    private func deleteSelected() {
+        let toDelete = entries.filter { selection.contains($0.id) }
+        for entry in toDelete {
+            modelContext.delete(entry)
+        }
+        selection = []
+        editMode = .inactive
+    }
+
+    /// Deletes entries at the given index set (swipe-to-delete).
     private func deleteEntries(at offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(entries[index])

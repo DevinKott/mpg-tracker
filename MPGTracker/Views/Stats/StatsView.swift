@@ -16,6 +16,8 @@ struct StatsView: View {
     @Query(sort: \FillUpEntry.date, order: .reverse) private var entries: [FillUpEntry]
     @State private var showMpgShare = false
     @State private var showFuelCostShare = false
+    @State private var showCalculatedMPG = true
+    @State private var showVehicleReportedMPG = true
 
     var body: some View {
         if entries.count < 2 {
@@ -109,6 +111,7 @@ struct StatsView: View {
     private var mpgChartSection: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 12) {
+                mpgSeriesToggleRow
                 mpgChartView
                     .accessibilityChartDescriptor(MPGChartDescriptor(entries: chronologicalEntries))
                 Button {
@@ -127,6 +130,22 @@ struct StatsView: View {
         } label: {
             Text(String(localized: "MPG Over Time"))
                 .font(.headline)
+        }
+    }
+
+    /// Toggle buttons for showing/hiding each MPG series.
+    private var mpgSeriesToggleRow: some View {
+        HStack(spacing: 8) {
+            Toggle(String(localized: "Calculated"), isOn: $showCalculatedMPG)
+                .toggleStyle(.button)
+                .accessibilityLabel(String(localized: "Show Calculated MPG"))
+                .accessibilityHint(String(localized: "Toggles the calculated MPG line on the chart"))
+            if stats.hasTruckReportedMPG {
+                Toggle(String(localized: "Vehicle-Reported"), isOn: $showVehicleReportedMPG)
+                    .toggleStyle(.button)
+                    .accessibilityLabel(String(localized: "Show Vehicle-Reported MPG"))
+                    .accessibilityHint(String(localized: "Toggles the vehicle-reported MPG line on the chart"))
+            }
         }
     }
 
@@ -163,38 +182,54 @@ struct StatsView: View {
     // MARK: - Chart Views
 
     /// The MPG over time line chart — extracted for use with `ImageRenderer`.
+    ///
+    /// Renders only the series currently enabled by `showCalculatedMPG` and
+    /// `showVehicleReportedMPG`. Shows a placeholder when both are off.
+    @ViewBuilder
     private var mpgChartView: some View {
-        Chart {
-            ForEach(chronologicalEntries) { entry in
-                LineMark(
-                    x: .value(String(localized: "Date"), entry.date),
-                    y: .value(String(localized: "Calculated MPG"), entry.calculatedMPG)
-                )
-                .foregroundStyle(by: .value(
-                    String(localized: "Series"),
-                    String(localized: "Calculated")
-                ))
-                .symbol(.circle)
-                .interpolationMethod(.catmullRom)
-            }
-            if stats.hasTruckReportedMPG {
-                ForEach(chronologicalEntries.filter { $0.truckReportedMPG != nil }) { entry in
-                    LineMark(
-                        x: .value(String(localized: "Date"), entry.date),
-                        y: .value(String(localized: "Vehicle-Reported MPG"), entry.truckReportedMPG!)
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "Series"),
-                        String(localized: "Vehicle-Reported")
-                    ))
-                    .symbol(.square)
-                    .interpolationMethod(.catmullRom)
+        let showVehicle = stats.hasTruckReportedMPG && showVehicleReportedMPG
+        let showLegend = showCalculatedMPG && showVehicle
+
+        if !showCalculatedMPG && !showVehicle {
+            Text(String(localized: "Select at least one series to display."))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .accessibilityLabel(String(localized: "No series selected. Enable Calculated or Vehicle-Reported to see the chart."))
+        } else {
+            Chart {
+                if showCalculatedMPG {
+                    ForEach(chronologicalEntries) { entry in
+                        LineMark(
+                            x: .value(String(localized: "Date"), entry.date),
+                            y: .value(String(localized: "Calculated MPG"), entry.calculatedMPG)
+                        )
+                        .foregroundStyle(by: .value(
+                            String(localized: "Series"),
+                            String(localized: "Calculated")
+                        ))
+                        .symbol(.circle)
+                        .interpolationMethod(.catmullRom)
+                    }
+                }
+                if showVehicle {
+                    ForEach(chronologicalEntries.filter { $0.truckReportedMPG != nil }) { entry in
+                        LineMark(
+                            x: .value(String(localized: "Date"), entry.date),
+                            y: .value(String(localized: "Vehicle-Reported MPG"), entry.truckReportedMPG!)
+                        )
+                        .foregroundStyle(by: .value(
+                            String(localized: "Series"),
+                            String(localized: "Vehicle-Reported")
+                        ))
+                        .symbol(.square)
+                        .interpolationMethod(.catmullRom)
+                    }
                 }
             }
+            .frame(height: 200)
+            .chartLegend(showLegend ? .visible : .hidden)
+            .accessibilityLabel(String(localized: "MPG over time line chart"))
         }
-        .frame(height: 200)
-        .chartLegend(stats.hasTruckReportedMPG ? .visible : .hidden)
-        .accessibilityLabel(String(localized: "MPG over time line chart"))
     }
 
     /// The fuel cost per gallon line chart — extracted for use with `ImageRenderer`.

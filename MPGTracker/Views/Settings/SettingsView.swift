@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var shareItems: [Any] = []
     @State private var isShowingShareSheet = false
     @State private var showAlert = false
+    @State private var alertTitle = ""
     @State private var alertMessage = ""
 
     var body: some View {
@@ -37,7 +38,7 @@ struct SettingsView: View {
         .sheet(isPresented: $isShowingShareSheet) {
             ActivityViewController(items: shareItems)
         }
-        .alert(String(localized: "Import Error"), isPresented: $showAlert) {
+        .alert(alertTitle, isPresented: $showAlert) {
             Button(String(localized: "OK"), role: .cancel) {}
         } message: {
             Text(alertMessage)
@@ -113,6 +114,7 @@ struct SettingsView: View {
     private func handleImport(result: Result<[URL], Error>) {
         switch result {
         case .failure:
+            alertTitle = String(localized: "Import Error")
             alertMessage = String(localized: "Could not open the selected file.")
             showAlert = true
         case .success(let urls):
@@ -127,6 +129,7 @@ struct SettingsView: View {
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
 
         guard let csv = try? String(contentsOf: url, encoding: .utf8) else {
+            alertTitle = String(localized: "Import Error")
             alertMessage = String(localized: "Could not read the selected file.")
             showAlert = true
             return
@@ -134,6 +137,7 @@ struct SettingsView: View {
 
         let newEntries = DataTransfer.importCSV(csv)
         guard !newEntries.isEmpty else {
+            alertTitle = String(localized: "Import Error")
             alertMessage = String(localized: "No valid fill-up entries were found in the file.")
             showAlert = true
             return
@@ -142,6 +146,13 @@ struct SettingsView: View {
         for entry in newEntries {
             modelContext.insert(entry)
         }
+
+        let count = newEntries.count
+        alertTitle = String(localized: "Import Successful")
+        alertMessage = count == 1
+            ? String(localized: "Successfully imported 1 fill-up.")
+            : String(localized: "Successfully imported \(count) fill-ups.")
+        showAlert = true
     }
 }
 
