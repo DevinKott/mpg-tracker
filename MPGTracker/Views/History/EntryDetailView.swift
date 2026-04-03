@@ -81,13 +81,16 @@ struct EntryDetailView: View {
         }
     }
 
-    /// The date and time this fill-up was recorded.
+    /// The date and time this fill-up was recorded. Editable inline via a date picker.
     private var dateSection: some View {
         Section(String(localized: "Date")) {
-            detailRow(
-                label: String(localized: "Recorded"),
-                value: entry.date.formatted(date: .long, time: .shortened)
+            DatePicker(
+                String(localized: "Recorded"),
+                selection: $entry.date,
+                displayedComponents: [.date, .hourAndMinute]
             )
+            .accessibilityLabel(String(localized: "Fill-up date and time"))
+            .accessibilityHint(String(localized: "Tap to change the recorded date and time"))
         }
     }
 
@@ -135,6 +138,7 @@ private struct EditEntrySheetView: View {
     @State private var totalPriceText: String
     @State private var truckMPGText: String
     @State private var notesText: String
+    @State private var selectedDate: Date
 
     init(entry: FillUpEntry) {
         self.entry = entry
@@ -143,6 +147,7 @@ private struct EditEntrySheetView: View {
         _totalPriceText = State(initialValue: entry.totalPricePaid.map { String($0) } ?? "")
         _truckMPGText = State(initialValue: entry.truckReportedMPG.map { String($0) } ?? "")
         _notesText = State(initialValue: entry.notes ?? "")
+        _selectedDate = State(initialValue: entry.date)
     }
 
     /// `true` when the required fields contain valid, non-zero values.
@@ -188,7 +193,7 @@ private struct EditEntrySheetView: View {
 
     // MARK: - Form sections
 
-    /// Required fields: miles driven and gallons pumped.
+    /// Required fields: miles driven, gallons pumped, and fill-up date/time.
     private var requiredSection: some View {
         Section(String(localized: "Required")) {
             TextField(String(localized: "Miles driven"), text: $milesText)
@@ -202,6 +207,14 @@ private struct EditEntrySheetView: View {
                 .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
                 .accessibilityLabel(String(localized: "Gallons pumped"))
                 .accessibilityHint(String(localized: "Read from the fuel pump display"))
+
+            DatePicker(
+                String(localized: "Date & Time"),
+                selection: $selectedDate,
+                displayedComponents: [.date, .hourAndMinute]
+            )
+            .accessibilityLabel(String(localized: "Fill-up date and time"))
+            .accessibilityHint(String(localized: "The date and time this fill-up occurred"))
         }
     }
 
@@ -230,13 +243,18 @@ private struct EditEntrySheetView: View {
 
     /// Writes the parsed field values back to the entry and dismisses the sheet.
     ///
-    /// The `FillUpEntry` `didSet` observers automatically recalculate
-    /// `calculatedMPG` and `pricePerGallon` when the relevant properties change.
+    /// Derived values (`calculatedMPG`, `pricePerGallon`) are recalculated
+    /// explicitly here because SwiftData `@Model` accessors do not reliably
+    /// trigger `didSet` observers when properties are mutated externally.
     private func applyChanges() {
         guard let miles = parsedMiles, let gallons = parsedGallons else { return }
+        let totalPrice = Double(totalPriceText.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }
+        entry.date = selectedDate
         entry.milesDriven = miles
         entry.gallonsPumped = gallons
-        entry.totalPricePaid = Double(totalPriceText.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }
+        entry.calculatedMPG = MPGCalculator.calculateMPG(miles: miles, gallons: gallons)
+        entry.totalPricePaid = totalPrice
+        entry.pricePerGallon = totalPrice.flatMap { gallons > 0 ? MPGCalculator.calculatePricePerGallon(totalPrice: $0, gallons: gallons) : nil }
         entry.truckReportedMPG = Double(truckMPGText.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }
         let trimmedNotes = notesText.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.notes = trimmedNotes.isEmpty ? nil : trimmedNotes

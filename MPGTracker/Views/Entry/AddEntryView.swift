@@ -42,6 +42,8 @@ struct AddEntryView: View {
 
     // MARK: - UI state
 
+    /// The date and time of this fill-up, defaulting to now.
+    @State private var entryDate: Date = Date()
     /// Triggers the post-save confirmation banner.
     @State private var didSave: Bool = false
 
@@ -174,6 +176,14 @@ struct AddEntryView: View {
             )
             .accessibilityLabel(String(localized: "Notes"))
             .accessibilityHint(String(localized: "Optional free-text note about this fill-up"))
+
+            DatePicker(
+                String(localized: "Date & Time"),
+                selection: $entryDate,
+                displayedComponents: [.date, .hourAndMinute]
+            )
+            .accessibilityLabel(String(localized: "Fill-up date and time"))
+            .accessibilityHint(String(localized: "Defaults to now; adjust if this fill-up happened earlier"))
         }
     }
 
@@ -268,7 +278,7 @@ struct AddEntryView: View {
         let notesTrimmed = notes.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let entry = FillUpEntry(
-            date: Date(),
+            date: entryDate,
             milesDriven: miles,
             gallonsPumped: gallons,
             totalPricePaid: totalPrice,
@@ -295,6 +305,7 @@ struct AddEntryView: View {
         notes = ""
         priceOverrideText = ""
         isPriceOverridden = false
+        entryDate = Date()
     }
 
     /// Displays the saved banner briefly, then hides it.
