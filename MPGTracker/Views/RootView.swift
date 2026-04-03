@@ -64,8 +64,7 @@ struct RootView: View {
     /// Settings tab — import/export controls and About section.
     private var settingsTab: some View {
         NavigationStack {
-            Text(String(localized: "Settings"))
-                .accessibilityLabel(String(localized: "Settings screen placeholder"))
+            SettingsView()
         }
         .tabItem {
             Label(

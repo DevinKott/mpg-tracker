@@ -119,6 +119,11 @@ MPGTracker/
 - On save: create a `FillUpEntry`, insert into `modelContext`, dismiss the form.
 - Date is captured automatically as `Date()` at save time — not exposed to the user.
 
+**TODO (datetime editing):**
+- In `AddEntryView`: pre-populate a date field with the current datetime and expose it using a `DatePicker` (`.datePickerStyle(.compact)` or `.graphical`). User can adjust before saving if the fill-up happened earlier.
+- In `EntryDetailView` / `EditEntrySheetView`: make the date field editable via the same `DatePicker` style, so past entries can have their datetime corrected.
+- The date field should be optional to interact with — it defaults to now and most users will leave it alone.
+
 **`MPGCalculator.swift`** — pure functions, no SwiftData imports:
 - `calculateMPG(miles: Double, gallons: Double) -> Double`
 - `calculatePricePerGallon(totalPrice: Double, gallons: Double) -> Double`
@@ -196,7 +201,7 @@ MPGTracker/
 
 ---
 
-## Step 6 — Import & Export
+## Step 6 — Import & Export ✅
 
 **Goal:** Allow the user to export all data as CSV or JSON, import from CSV, and export chart images (chart image export is handled in Step 5).
 
@@ -222,6 +227,10 @@ date, milesDriven, gallonsPumped, calculatedMPG, totalPricePaid, pricePerGallon,
 - "Export as CSV" — generates file, presents share sheet.
 - "Export as JSON" — generates file, presents share sheet.
 - "Import from CSV" — presents file picker (`fileImporter`), parses, inserts new entries (no duplicates check needed for v1).
+
+**TODO (v2 import improvements):**
+- After parsing, show a confirmation dialog before inserting: **"Replace All"** (delete existing entries, insert imported ones) or **"Add New Entries"** (append only; skip rows whose `id` already exists in the store).
+- Duplicate detection key: `FillUpEntry.id` (UUID). Match on `id` only — don't attempt fuzzy matching on field values.
 
 **Acceptance criteria:**
 - CSV export contains all entries with correct columns.
