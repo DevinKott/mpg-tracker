@@ -72,10 +72,9 @@ struct HistoryView: View {
                 editDoneButton
             }
         }
-        .confirmationDialog(
+        .alert(
             deleteConfirmationTitle,
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
+            isPresented: $showDeleteConfirmation
         ) {
             Button(String(localized: "Delete"), role: .destructive) {
                 deleteSelected()
