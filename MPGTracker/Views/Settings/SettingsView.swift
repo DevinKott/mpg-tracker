@@ -56,12 +56,6 @@ struct SettingsView: View {
             .accessibilityLabel(String(localized: "Export as CSV"))
             .accessibilityHint(String(localized: "Generates a CSV file of all your fill-up entries and opens a share sheet"))
 
-            Button(String(localized: "Export as JSON")) {
-                exportJSON()
-            }
-            .accessibilityLabel(String(localized: "Export as JSON"))
-            .accessibilityHint(String(localized: "Generates a JSON file of all your fill-up entries and opens a share sheet"))
-
             Button(String(localized: "Import from CSV")) {
                 isImporting = true
             }
@@ -70,11 +64,24 @@ struct SettingsView: View {
         }
     }
 
-    /// Placeholder About section — full content added in Step 7.
+    /// App info, purpose, privacy statement, and developer credit.
     private var aboutSection: some View {
-        Section(String(localized: "About")) {
-            Text(String(localized: "MPGTracker"))
-                .accessibilityLabel(String(localized: "MPGTracker — About section coming soon"))
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        return Section(String(localized: "About")) {
+            Text("Fuel Efficiency Tracker \(version)")
+                .accessibilityLabel(String(localized: "Fuel Efficiency Tracker, version \(version)"))
+
+            Text(String(localized: "A personal tool I built for tracking fuel efficiency."))
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(String(localized: "A personal tool I built for tracking fuel efficiency."))
+
+            Text(String(localized: "No data collected. No ads. No subscriptions. Data stays on your device."))
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(String(localized: "No data collected. No ads. No subscriptions. Data stays on your device."))
+
+            Text(String(localized: "Made by Devin Kott"))
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(String(localized: "Made by Devin Kott"))
         }
     }
 
