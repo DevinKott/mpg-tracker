@@ -12,7 +12,7 @@ import SwiftData
 struct MPGTrackerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            FillUpEntry.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +25,7 @@ struct MPGTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Text(String(localized: "MPGTracker"))
         }
         .modelContainer(sharedModelContainer)
     }
