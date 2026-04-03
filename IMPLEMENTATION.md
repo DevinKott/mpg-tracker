@@ -65,7 +65,7 @@ MPGTracker/
 
 ---
 
-## Step 2 — App Shell (Tab Navigation)
+## Step 2 — App Shell (Tab Navigation) ✅
 
 **Goal:** Create the top-level `TabView` that hosts all major screens. Each tab shows a placeholder view for now.
 

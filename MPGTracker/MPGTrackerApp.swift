@@ -25,7 +25,7 @@ struct MPGTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Text(String(localized: "MPGTracker"))
+            RootView()
         }
         .modelContainer(sharedModelContainer)
     }
