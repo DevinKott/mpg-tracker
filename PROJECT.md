@@ -28,6 +28,7 @@ Each fill-up session follows a simple loop:
 | Total price paid | User input (optional) | Total cost at the pump |
 | Price per gallon | App-derived or user input | Calculated from total ÷ gallons, or entered manually |
 | Vehicle-reported MPG | User input (optional) | What the vehicle's computer displayed — for comparison |
+| Notes | User input (optional) | Free-text note about the fill-up |
 | Date | Auto-captured | Timestamp of the entry |
 
 ---
