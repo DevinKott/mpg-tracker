@@ -89,16 +89,16 @@ struct StatsView: View {
                 )
                 statRow(
                     label: String(localized: "Total Miles"),
-                    value: String(format: "%.1f mi", stats.totalMiles)
+                    value: stats.totalMiles.formatted(.number.precision(.fractionLength(1))) + " mi"
                 )
                 statRow(
                     label: String(localized: "Total Gallons"),
-                    value: String(format: "%.3f gal", stats.totalGallons)
+                    value: stats.totalGallons.formatted(.number.precision(.fractionLength(3))) + " gal"
                 )
                 if let cost = stats.totalFuelCost {
                     statRow(
                         label: String(localized: "Total Fuel Cost"),
-                        value: String(format: "$%.2f", cost)
+                        value: cost.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
                     )
                 }
             }
