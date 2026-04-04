@@ -33,9 +33,24 @@ private struct FillUpEntryDTO: Codable {
 /// No SwiftData imports; no UI code. Safe to call from any context.
 enum DataTransfer {
 
+    /// Thrown when the CSV header is missing one or more columns required for import.
+    enum ImportError: LocalizedError {
+        case missingRequiredColumns([String])
+
+        var errorDescription: String? {
+            switch self {
+            case .missingRequiredColumns(let cols):
+                return "Missing required columns: \(cols.joined(separator: ", "))."
+            }
+        }
+    }
+
     /// CSV header row — must match the column order used in `csvRow(from:)`.
     private static let csvHeader =
         "date,milesDriven,gallonsPumped,calculatedMPG,totalPricePaid,pricePerGallon,truckReportedMPG,notes"
+
+    /// Columns that must be present in any imported CSV header.
+    private static let requiredColumns = ["date", "milesDriven", "gallonsPumped"]
 
     /// Shared ISO 8601 formatter for consistent date serialization.
     private static let iso8601: ISO8601DateFormatter = ISO8601DateFormatter()
@@ -108,17 +123,33 @@ enum DataTransfer {
 
     /// Parses a CSV string into new `FillUpEntry` objects.
     ///
-    /// The first line is treated as a header and skipped. Malformed rows are counted but
-    /// not imported — this function never throws or crashes.
+    /// The first line is parsed as a header to build a name→index column map.
+    /// Throws `ImportError.missingRequiredColumns` if any required column is absent.
+    /// Malformed data rows are counted but not imported.
     ///
     /// - Parameter csv: A UTF-8 CSV string, typically from a previously exported file.
     /// - Returns: A tuple of successfully created entries and the count of rows that were skipped.
-    static func importCSV(_ csv: String) -> (entries: [FillUpEntry], skippedCount: Int) {
+    /// - Throws: `ImportError` if the header is missing required columns.
+    static func importCSV(_ csv: String) throws -> (entries: [FillUpEntry], skippedCount: Int) {
         let lines = csv.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         guard lines.count > 1 else { return ([], 0) }
+        let columnMap = try parseHeaderColumns(lines[0])
         let dataLines = Array(lines.dropFirst())
-        let entries = dataLines.compactMap { parseRow(splitCSVRow($0)) }
+        let entries = dataLines.compactMap { parseRow(splitCSVRow($0), columnMap: columnMap) }
         return (entries, dataLines.count - entries.count)
+    }
+
+    /// Parses the header row into a name→index map and validates that all required columns are present.
+    ///
+    /// - Throws: `ImportError.missingRequiredColumns` listing any absent required column names.
+    private static func parseHeaderColumns(_ line: String) throws -> [String: Int] {
+        let headers = splitCSVRow(line)
+        let map = Dictionary(
+            uniqueKeysWithValues: headers.enumerated().map { ($1.trimmingCharacters(in: .whitespaces), $0) }
+        )
+        let missing = requiredColumns.filter { map[$0] == nil }
+        guard missing.isEmpty else { throw ImportError.missingRequiredColumns(missing) }
+        return map
     }
 
     /// Splits a CSV row into column strings, respecting RFC 4180 quoting rules.
@@ -152,22 +183,29 @@ enum DataTransfer {
         return columns
     }
 
-    /// Parses a split row into a `FillUpEntry`. Returns `nil` if required fields are invalid.
+    /// Parses a split row into a `FillUpEntry` using name-based column lookup.
     ///
-    /// Required columns: date (index 0), milesDriven (1), gallonsPumped (2).
-    /// calculatedMPG (3) is re-derived from the model; it is not read from CSV.
-    private static func parseRow(_ columns: [String]) -> FillUpEntry? {
-        guard columns.count >= 3 else { return nil }
+    /// Returns `nil` if any required field is missing, unparseable, zero, or exceeds the
+    /// allowed range (miles > 1,000 or gallons > 100) — matching form-layer validation.
+    /// `calculatedMPG` and `pricePerGallon` are always re-derived; CSV values are ignored.
+    private static func parseRow(_ columns: [String], columnMap: [String: Int]) -> FillUpEntry? {
+        func value(for key: String) -> String? {
+            guard let index = columnMap[key], index < columns.count else { return nil }
+            return columns[index]
+        }
 
-        guard let date = iso8601.date(from: columns[0]),
-              let miles = Double(columns[1]),
-              let gallons = Double(columns[2]),
-              miles > 0,
-              gallons > 0 else { return nil }
+        guard let dateStr = value(for: "date"),
+              let date = iso8601.date(from: dateStr),
+              let milesStr = value(for: "milesDriven"),
+              let miles = Double(milesStr),
+              let gallonsStr = value(for: "gallonsPumped"),
+              let gallons = Double(gallonsStr),
+              miles > 0, miles <= 1_000,
+              gallons > 0, gallons <= 100 else { return nil }
 
-        let totalPricePaid = columns.count > 4 ? Double(columns[4]) : nil
-        let truckReportedMPG = columns.count > 6 ? Double(columns[6]) : nil
-        let rawNotes = columns.count > 7 ? columns[7] : ""
+        let totalPricePaid = value(for: "totalPricePaid").flatMap { Double($0) }
+        let truckReportedMPG = value(for: "truckReportedMPG").flatMap { Double($0) }
+        let rawNotes = value(for: "notes") ?? ""
         let notes: String? = rawNotes.isEmpty ? nil : rawNotes
 
         return FillUpEntry(

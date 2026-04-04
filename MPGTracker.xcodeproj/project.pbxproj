@@ -10,7 +10,6 @@
 		1FD529492F7F2F2400B5B0BA /* MPGTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MPGTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FD529B02F80702E00B5B0BA /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		1FD529B12F80702E00B5B0BA /* PROJECT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PROJECT.md; sourceTree = "<group>"; };
-		1FD529B52F80702E00B5B0BA /* MPGT-004-silent-import-row-drops.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-004-silent-import-row-drops.txt"; sourceTree = "<group>"; };
 		1FD529FD2F8156DD00B5B0BA /* MPGT-006-units-toggle.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-006-units-toggle.txt"; sourceTree = "<group>"; };
 		1FD529FE2F8156DD00B5B0BA /* MPGT-007-history-no-search.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-007-history-no-search.txt"; sourceTree = "<group>"; };
 		1FD529FF2F8156DD00B5B0BA /* MPGT-008-import-duplicates.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-008-import-duplicates.txt"; sourceTree = "<group>"; };
@@ -60,7 +59,6 @@
 				1FD529FD2F8156DD00B5B0BA /* MPGT-006-units-toggle.txt */,
 				1FD529FE2F8156DD00B5B0BA /* MPGT-007-history-no-search.txt */,
 				1FD529FF2F8156DD00B5B0BA /* MPGT-008-import-duplicates.txt */,
-				1FD529B52F80702E00B5B0BA /* MPGT-004-silent-import-row-drops.txt */,
 			);
 			path = tickets;
 			sourceTree = "<group>";

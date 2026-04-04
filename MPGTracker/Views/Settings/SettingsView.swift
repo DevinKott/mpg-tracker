@@ -22,6 +22,7 @@ struct SettingsView: View {
     @State private var alertTitle = ""
     @State private var alertMessage = ""
     @State private var didImport = false
+    @State private var importedCount = 0
 
     var body: some View {
         Form {
@@ -93,7 +94,10 @@ struct SettingsView: View {
 
     /// Brief confirmation shown after a clean (0 skipped) import.
     private var importBanner: some View {
-        Text(String(localized: "Import successful"))
+        let label = importedCount == 1
+            ? String(localized: "Imported 1 fill-up")
+            : String(localized: "Imported \(importedCount) fill-ups")
+        return Text(label)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
@@ -101,11 +105,12 @@ struct SettingsView: View {
             .background(.green.gradient, in: Capsule())
             .padding(.top, 8)
             .transition(.move(edge: .top).combined(with: .opacity))
-            .accessibilityLabel(String(localized: "Import completed successfully"))
+            .accessibilityLabel(label)
     }
 
-    /// Displays the import banner briefly, then hides it.
-    private func showImportConfirmation() {
+    /// Displays the import banner briefly with the given entry count, then hides it.
+    private func showImportConfirmation(count: Int) {
+        importedCount = count
         withAnimation { didImport = true }
         Task {
             try? await Task.sleep(nanoseconds: 1_500_000_000)
@@ -175,7 +180,21 @@ struct SettingsView: View {
             return
         }
 
-        let result = DataTransfer.importCSV(csv)
+        let result: (entries: [FillUpEntry], skippedCount: Int)
+        do {
+            result = try DataTransfer.importCSV(csv)
+        } catch let error as DataTransfer.ImportError {
+            alertTitle = String(localized: "Import Error")
+            alertMessage = error.errorDescription ?? String(localized: "The file could not be imported.")
+            showAlert = true
+            return
+        } catch {
+            alertTitle = String(localized: "Import Error")
+            alertMessage = String(localized: "The file could not be imported.")
+            showAlert = true
+            return
+        }
+
         guard !result.entries.isEmpty else {
             alertTitle = String(localized: "Import Error")
             alertMessage = String(localized: "No valid fill-up entries were found in the file.")
@@ -188,7 +207,7 @@ struct SettingsView: View {
         }
 
         if result.skippedCount == 0 {
-            showImportConfirmation()
+            showImportConfirmation(count: result.entries.count)
         } else {
             let imported = result.entries.count
             let skipped = result.skippedCount
