@@ -98,9 +98,15 @@ struct AddEntryView: View {
         return liveCalculatedPricePerGallon
     }
 
-    /// `true` when the required fields contain valid, non-zero values.
+    /// `true` when the parsed miles value exceeds the allowed maximum.
+    private var milesExceedsMax: Bool { (parsedMiles ?? 0) > 1000 }
+
+    /// `true` when the parsed gallons value exceeds the allowed maximum.
+    private var gallonsExceedsMax: Bool { (parsedGallons ?? 0) > 100 }
+
+    /// `true` when the required fields contain valid, in-range, non-zero values.
     private var isSaveEnabled: Bool {
-        parsedMiles != nil && parsedGallons != nil
+        parsedMiles != nil && parsedGallons != nil && !milesExceedsMax && !gallonsExceedsMax
     }
 
     // MARK: - Form sections
@@ -117,6 +123,13 @@ struct AddEntryView: View {
             .accessibilityLabel(String(localized: "Miles driven"))
             .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
 
+            if milesExceedsMax {
+                Text(String(localized: "Max 1,000 mi"))
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(String(localized: "Error: miles driven exceeds the maximum of 1,000"))
+            }
+
             TextField(
                 String(localized: "Gallons pumped"),
                 text: $gallonsText
@@ -125,6 +138,13 @@ struct AddEntryView: View {
             .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
             .accessibilityLabel(String(localized: "Gallons pumped"))
             .accessibilityHint(String(localized: "Read from the fuel pump display"))
+
+            if gallonsExceedsMax {
+                Text(String(localized: "Max 100 gal"))
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(String(localized: "Error: gallons pumped exceeds the maximum of 100"))
+            }
         }
     }
 

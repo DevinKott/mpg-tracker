@@ -21,22 +21,16 @@ final class FillUpEntry {
     /// When the fill-up was recorded. Auto-set to the current time at creation.
     var date: Date
 
-    /// Miles driven since the last trip odometer reset. Clamped to 0–1000.
+    /// Miles driven since the last trip odometer reset.
     /// Setting this automatically recalculates `calculatedMPG`.
     var milesDriven: Double {
-        didSet {
-            let clamped = max(0, min(1000, milesDriven))
-            if clamped != milesDriven { milesDriven = clamped; return }
-            calculatedMPG = MPGCalculator.calculateMPG(miles: milesDriven, gallons: gallonsPumped)
-        }
+        didSet { calculatedMPG = MPGCalculator.calculateMPG(miles: milesDriven, gallons: gallonsPumped) }
     }
 
-    /// Gallons pumped at this fill-up. Clamped to 0–100.
+    /// Gallons pumped at this fill-up.
     /// Setting this automatically recalculates `calculatedMPG` and `pricePerGallon`.
     var gallonsPumped: Double {
         didSet {
-            let clamped = max(0, min(100, gallonsPumped))
-            if clamped != gallonsPumped { gallonsPumped = clamped; return }
             calculatedMPG = MPGCalculator.calculateMPG(miles: milesDriven, gallons: gallonsPumped)
             pricePerGallon = totalPricePaid.flatMap { gallonsPumped > 0 ? MPGCalculator.calculatePricePerGallon(totalPrice: $0, gallons: gallonsPumped) : nil }
         }
@@ -69,16 +63,13 @@ final class FillUpEntry {
         truckReportedMPG: Double? = nil,
         notes: String? = nil
     ) {
-        let miles = max(0, min(1000, milesDriven))
-        let gallons = max(0, min(100, gallonsPumped))
-
         self.id = UUID()
         self.date = date
-        self.milesDriven = miles
-        self.gallonsPumped = gallons
-        self.calculatedMPG = MPGCalculator.calculateMPG(miles: miles, gallons: gallons)
+        self.milesDriven = milesDriven
+        self.gallonsPumped = gallonsPumped
+        self.calculatedMPG = MPGCalculator.calculateMPG(miles: milesDriven, gallons: gallonsPumped)
         self.totalPricePaid = totalPricePaid
-        self.pricePerGallon = totalPricePaid.flatMap { gallons > 0 ? MPGCalculator.calculatePricePerGallon(totalPrice: $0, gallons: gallons) : nil }
+        self.pricePerGallon = totalPricePaid.flatMap { gallonsPumped > 0 ? MPGCalculator.calculatePricePerGallon(totalPrice: $0, gallons: gallonsPumped) : nil }
         self.truckReportedMPG = truckReportedMPG
         self.notes = notes
     }

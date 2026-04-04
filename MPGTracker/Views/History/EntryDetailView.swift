@@ -150,9 +150,15 @@ private struct EditEntrySheetView: View {
         _selectedDate = State(initialValue: entry.date)
     }
 
-    /// `true` when the required fields contain valid, non-zero values.
+    /// `true` when the parsed miles value exceeds the allowed maximum.
+    private var milesExceedsMax: Bool { (parsedMiles ?? 0) > 1000 }
+
+    /// `true` when the parsed gallons value exceeds the allowed maximum.
+    private var gallonsExceedsMax: Bool { (parsedGallons ?? 0) > 100 }
+
+    /// `true` when the required fields contain valid, in-range, non-zero values.
     private var isSaveEnabled: Bool {
-        parsedMiles != nil && parsedGallons != nil
+        parsedMiles != nil && parsedGallons != nil && !milesExceedsMax && !gallonsExceedsMax
     }
 
     private var parsedMiles: Double? {
@@ -196,31 +202,47 @@ private struct EditEntrySheetView: View {
     /// Required fields: miles driven, gallons pumped, and fill-up date/time.
     private var requiredSection: some View {
         Section(String(localized: "Required")) {
-            HStack {
-                Text(String(localized: "Miles driven"))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                TextField("", text: $milesText)
-                    .multilineTextAlignment(.trailing)
-                    .keyboardType(.decimalPad)
-                    .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
-                Text(String(localized: "mi"))
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(String(localized: "Miles driven"))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    TextField("", text: $milesText)
+                        .multilineTextAlignment(.trailing)
+                        .keyboardType(.decimalPad)
+                        .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
+                    Text(String(localized: "mi"))
+                        .foregroundStyle(.secondary)
+                }
+                if milesExceedsMax {
+                    Text(String(localized: "Max 1,000 mi"))
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .accessibilityLabel(String(localized: "Error: miles driven exceeds the maximum of 1,000"))
+                }
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(String(localized: "Miles driven"))
             .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
 
-            HStack {
-                Text(String(localized: "Gallons pumped"))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                TextField("", text: $gallonsText)
-                    .multilineTextAlignment(.trailing)
-                    .keyboardType(.decimalPad)
-                    .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
-                Text(String(localized: "gal"))
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(String(localized: "Gallons pumped"))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    TextField("", text: $gallonsText)
+                        .multilineTextAlignment(.trailing)
+                        .keyboardType(.decimalPad)
+                        .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
+                    Text(String(localized: "gal"))
+                        .foregroundStyle(.secondary)
+                }
+                if gallonsExceedsMax {
+                    Text(String(localized: "Max 100 gal"))
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .accessibilityLabel(String(localized: "Error: gallons pumped exceeds the maximum of 100"))
+                }
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(String(localized: "Gallons pumped"))
