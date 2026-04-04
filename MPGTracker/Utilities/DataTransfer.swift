@@ -108,15 +108,17 @@ enum DataTransfer {
 
     /// Parses a CSV string into new `FillUpEntry` objects.
     ///
-    /// The first line is treated as a header and skipped. Malformed rows are silently
-    /// dropped — this function never throws or crashes.
+    /// The first line is treated as a header and skipped. Malformed rows are counted but
+    /// not imported — this function never throws or crashes.
     ///
     /// - Parameter csv: A UTF-8 CSV string, typically from a previously exported file.
-    /// - Returns: An array of newly created `FillUpEntry` objects.
-    static func importCSV(_ csv: String) -> [FillUpEntry] {
+    /// - Returns: A tuple of successfully created entries and the count of rows that were skipped.
+    static func importCSV(_ csv: String) -> (entries: [FillUpEntry], skippedCount: Int) {
         let lines = csv.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        guard lines.count > 1 else { return [] }
-        return lines.dropFirst().compactMap { parseRow(splitCSVRow($0)) }
+        guard lines.count > 1 else { return ([], 0) }
+        let dataLines = Array(lines.dropFirst())
+        let entries = dataLines.compactMap { parseRow(splitCSVRow($0)) }
+        return (entries, dataLines.count - entries.count)
     }
 
     /// Splits a CSV row into column strings, respecting RFC 4180 quoting rules.

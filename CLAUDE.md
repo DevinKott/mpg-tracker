@@ -56,8 +56,8 @@ For errors or operations with a meaningful outcome (e.g., import/export with cou
 - **Message format:** short plain-English sentence ending with a period (e.g., `"Export failed. Please try again."`)
 
 **When to use alert vs. banner:**
-- Banner (green capsule): simple "it worked" confirmation for quick actions (saving an entry)
-- Alert: errors, or successes that carry meaningful detail (e.g., import count)
+- Banner (green capsule): simple "it worked" confirmation for quick actions (saving an entry, clean import with 0 skipped rows)
+- Alert: errors, or successes that carry meaningful detail (e.g., partial import with skipped-row count)
 
 ### Inline Field Validation (Dirty-State)
 For required fields where the Save button may be disabled, show an inline "Required" hint beneath the field after the user has touched and left it empty. Do not show hints on initial render — only after the field has lost focus at least once (dirty state). Pattern established in `AddEntryView` and `EditEntrySheetView`.
@@ -89,6 +89,6 @@ For required fields where the Save button may be disabled, show an inline "Requi
 - `HistoryView` supports swipe-to-delete (`onDelete`) and multi-select bulk delete via an Edit/Done toolbar toggle; `FillUpEntryRow` is a private struct in the same file that renders each list row.
 - `FillUpEntry` has an optional `notes: String?` property; it is displayed in `EntryDetailView` and editable in `EditEntrySheetView`.
 - `StatsView` uses a private `StatsSnapshot` struct to compute all aggregate values once per render; charts use Swift Charts with `chronologicalEntries` (ascending date sort); chart export uses `ImageRenderer` + `UIActivityViewController` (private `ActivityViewController` bridging struct inside `StatsView.swift`); VoiceOver support via `AXChartDescriptorRepresentable` (`MPGChartDescriptor`, `FuelCostChartDescriptor`).
-- `DataTransfer` (caseless enum in `Utilities/`) has pure static functions: `exportCSV`, `exportJSON`, `importCSV`. Uses a private `FillUpEntryDTO: Codable` for JSON; CSV uses ISO 8601 dates and RFC 4180 quoting. `importCSV` skips malformed rows silently.
-- `SettingsView` (`Views/Settings/`) has a Data section (CSV export only, CSV import via `.fileImporter`) and a completed About section (app name + version from `Bundle.main`, purpose, privacy note, developer credit). JSON export code (`exportJSON`, `writeTempFile`) is kept in the file but not surfaced in the UI. Export uses a temp-file + `UIActivityViewController` (private `ActivityViewController` in the same file). Both export and import show an alert on failure; export failure uses "Export Error" / "Export failed. Please try again." `RootView` uses `SettingsView` in the settings tab.
+- `DataTransfer` (caseless enum in `Utilities/`) has pure static functions: `exportCSV`, `exportJSON`, `importCSV`. Uses a private `FillUpEntryDTO: Codable` for JSON; CSV uses ISO 8601 dates and RFC 4180 quoting. `importCSV` returns `(entries: [FillUpEntry], skippedCount: Int)` — malformed rows are counted, not silently dropped.
+- `SettingsView` (`Views/Settings/`) has a Data section (CSV export only, CSV import via `.fileImporter`) and a completed About section (app name + version from `Bundle.main`, purpose, privacy note, developer credit). JSON export code (`exportJSON`, `writeTempFile`) is kept in the file but not surfaced in the UI. Export uses a temp-file + `UIActivityViewController` (private `ActivityViewController` in the same file). Export failure shows an alert ("Export Error" / "Export failed. Please try again."). Import feedback: clean import (0 skipped) shows a green banner; partial import shows an alert with both imported and skipped counts; all import errors show an alert. `RootView` uses `SettingsView` in the settings tab.
 - Units toggle (miles/km) is a planned TODO — not yet implemented.

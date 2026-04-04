@@ -66,7 +66,7 @@ Each fill-up session follows a simple loop:
 
 ### Import & Export
 - Export data to CSV or JSON for use in other tools.
-- Import from CSV to restore or migrate data.
+- Import from CSV to restore or migrate data. A fully successful import (0 skipped rows) shows a transient green banner. If any rows were skipped due to formatting errors, an alert reports both the imported count and the skipped count.
 - Export charts as PNG/JPEG images the user can share from their own device.
 
 ---

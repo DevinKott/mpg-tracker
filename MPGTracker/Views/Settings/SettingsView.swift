@@ -21,6 +21,7 @@ struct SettingsView: View {
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
+    @State private var didImport = false
 
     var body: some View {
         Form {
@@ -28,6 +29,9 @@ struct SettingsView: View {
             aboutSection
         }
         .navigationTitle(String(localized: "Settings"))
+        .overlay(alignment: .top) {
+            if didImport { importBanner }
+        }
         .fileImporter(
             isPresented: $isImporting,
             allowedContentTypes: [.commaSeparatedText],
@@ -82,6 +86,30 @@ struct SettingsView: View {
             Text(String(localized: "Made by Devin Kott"))
                 .foregroundStyle(.secondary)
                 .accessibilityLabel(String(localized: "Made by Devin Kott"))
+        }
+    }
+
+    // MARK: - Banner
+
+    /// Brief confirmation shown after a clean (0 skipped) import.
+    private var importBanner: some View {
+        Text(String(localized: "Import successful"))
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.green.gradient, in: Capsule())
+            .padding(.top, 8)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .accessibilityLabel(String(localized: "Import completed successfully"))
+    }
+
+    /// Displays the import banner briefly, then hides it.
+    private func showImportConfirmation() {
+        withAnimation { didImport = true }
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            withAnimation { didImport = false }
         }
     }
 
@@ -147,24 +175,33 @@ struct SettingsView: View {
             return
         }
 
-        let newEntries = DataTransfer.importCSV(csv)
-        guard !newEntries.isEmpty else {
+        let result = DataTransfer.importCSV(csv)
+        guard !result.entries.isEmpty else {
             alertTitle = String(localized: "Import Error")
             alertMessage = String(localized: "No valid fill-up entries were found in the file.")
             showAlert = true
             return
         }
 
-        for entry in newEntries {
+        for entry in result.entries {
             modelContext.insert(entry)
         }
 
-        let count = newEntries.count
-        alertTitle = String(localized: "Import Successful")
-        alertMessage = count == 1
-            ? String(localized: "Successfully imported 1 fill-up.")
-            : String(localized: "Successfully imported \(count) fill-ups.")
-        showAlert = true
+        if result.skippedCount == 0 {
+            showImportConfirmation()
+        } else {
+            let imported = result.entries.count
+            let skipped = result.skippedCount
+            let importedLine = imported == 1
+                ? String(localized: "Imported 1 fill-up.")
+                : String(localized: "Imported \(imported) fill-ups.")
+            let skippedLine = skipped == 1
+                ? String(localized: "1 row was skipped due to formatting errors.")
+                : String(localized: "\(skipped) rows were skipped due to formatting errors.")
+            alertTitle = String(localized: "Import Successful")
+            alertMessage = "\(importedLine) \(skippedLine)"
+            showAlert = true
+        }
     }
 }
 
