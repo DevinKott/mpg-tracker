@@ -91,7 +91,12 @@ struct SettingsView: View {
     private func exportCSV() {
         let csv = DataTransfer.exportCSV(entries: entries)
         guard let data = csv.data(using: .utf8),
-              let url = writeTempFile(name: "mpgtracker_export.csv", data: data) else { return }
+              let url = writeTempFile(name: "mpgtracker_export.csv", data: data) else {
+            alertTitle = String(localized: "Export Error")
+            alertMessage = String(localized: "Export failed. Please try again.")
+            showAlert = true
+            return
+        }
         shareItems = [url]
         isShowingShareSheet = true
     }
