@@ -1,0 +1,26 @@
+MPGT-004 | Bug | High
+Malformed CSV rows are silently dropped during import
+
+---
+
+DESCRIPTION
+importCSV uses compactMap to skip unparseable rows without tracking them.
+If a user imports a file where some rows are malformed, the success alert
+reports only the rows that succeeded. The user has no indication that any
+data was skipped or lost.
+
+AFFECTED FILE
+MPGTracker/Utilities/DataTransfer.swift
+
+ACCEPTANCE CRITERIA
+- [ ] After import, the result communicates both the number of rows successfully
+      imported and the number of rows skipped.
+- [ ] If any rows were skipped, the alert clearly states this (e.g., "Imported
+      82 fill-ups. 18 rows were skipped due to formatting errors.").
+- [ ] A fully successful import (0 skipped rows) shows the current success message
+      with no change to the existing happy-path experience.
+
+SUGGESTED FIX
+Return a result struct (or tuple) from importCSV that includes both the imported
+entries and a skipped-row count. Update the import completion handler in
+SettingsView to display the skipped count in the alert when it is greater than zero.

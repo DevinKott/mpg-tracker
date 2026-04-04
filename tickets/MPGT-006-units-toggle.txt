@@ -1,0 +1,41 @@
+MPGT-006 | Feature | Medium
+Add miles/metric units toggle
+
+---
+
+DESCRIPTION
+All user-facing labels and calculated values are hardcoded to imperial units
+(miles, gallons, MPG). There is no way to switch to metric (kilometers, liters,
+km/L). The units preference should be stored in UserDefaults via AppStorage and
+respected everywhere a unit-dependent value is displayed or labelled.
+
+Data stored in the SwiftData model always remains in imperial units. Conversion
+to metric is display-only. CSV and JSON exports use imperial canonical values
+regardless of the user's display preference.
+
+AFFECTED FILES
+MPGTracker/Views/Settings/SettingsView.swift     — add Preferences section with toggle
+MPGTracker/Utilities/MPGCalculator.swift         — add unit conversion helpers
+MPGTracker/Views/Entry/AddEntryView.swift        — dynamic "Miles driven" / "Kilometers driven" and "Gallons pumped" / "Liters pumped" labels
+MPGTracker/Views/History/HistoryView.swift       — dynamic MPG/km·L⁻¹, gal/L, $/gal/$/L row labels
+MPGTracker/Views/History/EntryDetailView.swift   — dynamic field labels in detail and edit sheet
+MPGTracker/Views/Stats/StatsView.swift           — dynamic stat labels, chart axis labels, and VoiceOver descriptions
+
+ACCEPTANCE CRITERIA
+- [ ] Settings screen has a "Preferences" section with a toggle between "Miles / Gallons (MPG)"
+      and "Kilometers / Liters (km/L)".
+- [ ] The preference is persisted across app launches (AppStorage / UserDefaults).
+- [ ] AddEntryView labels ("Miles driven", "Gallons pumped") reflect the active unit.
+- [ ] HistoryView row values and labels (MPG, gal, $/gal) convert and relabel correctly.
+- [ ] StatsView summary stats (Average MPG, Total Miles, Total Gallons) convert and relabel correctly.
+- [ ] StatsView chart axis labels and VoiceOver accessibility descriptions reflect the active unit.
+- [ ] EntryDetailView labels and values reflect the active unit.
+- [ ] CSV and JSON exports always use imperial values regardless of the display preference.
+- [ ] Switching units live (without restarting the app) updates all visible labels and values immediately.
+
+SUGGESTED FIX
+Add a Bool AppStorage key (e.g., "useMetricUnits") and read it via @AppStorage in
+each view. Add static helpers to MPGCalculator for conversion (mpgToKmPerLiter,
+milesToKilometers, gallonsToLiters) and for producing the correct unit label strings.
+Each view reads the AppStorage flag and calls the appropriate helper to format its
+displayed value and label. No changes to the SwiftData model or export logic are needed.

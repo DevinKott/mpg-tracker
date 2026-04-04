@@ -37,7 +37,7 @@ Each fill-up session follows a simple loop:
 
 ### Entry
 - Fast, minimal input screen optimized for use at a gas pump.
-- Required fields: miles driven, gallons pumped.
+- Required fields: miles driven (max 1,000) and gallons pumped (max 100). Out-of-range values show an inline error and block saving.
 - Optional fields: total price paid, vehicle-reported MPG.
 - App auto-calculates: MPG and price per gallon.
 - Allow manual override of calculated price per gallon.

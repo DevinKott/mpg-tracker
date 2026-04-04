@@ -1,0 +1,23 @@
+MPGT-003 | Bug | High
+CSV export fails silently when temp file write fails
+
+---
+
+DESCRIPTION
+If the temp file write fails during CSV export, the export function returns
+early with no feedback. The user taps "Export as CSV" and nothing happens —
+no sheet appears, no error is shown. CSV import already shows a failure alert;
+export does not.
+
+AFFECTED FILE
+MPGTracker/Views/Settings/SettingsView.swift
+
+ACCEPTANCE CRITERIA
+- [ ] If the export fails for any reason, an alert is shown with a brief error
+      message (e.g., "Export failed. Please try again.").
+- [ ] A successful export always results in the share sheet appearing.
+- [ ] Export and import have consistent error-handling patterns.
+
+SUGGESTED FIX
+Check the return value of writeTempFile and present an alert on nil, mirroring
+the existing import failure alert pattern already in SettingsView.

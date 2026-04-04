@@ -8,6 +8,13 @@
 
 /* Begin PBXFileReference section */
 		1FD529492F7F2F2400B5B0BA /* MPGTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MPGTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1FD529B02F80702E00B5B0BA /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
+		1FD529B12F80702E00B5B0BA /* PROJECT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PROJECT.md; sourceTree = "<group>"; };
+		1FD529B22F80702E00B5B0BA /* MPGT-001-silent-value-clamping.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-001-silent-value-clamping.txt"; sourceTree = "<group>"; };
+		1FD529B32F80702E00B5B0BA /* MPGT-002-ppg-override-affordance.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-002-ppg-override-affordance.txt"; sourceTree = "<group>"; };
+		1FD529B42F80702E00B5B0BA /* MPGT-003-silent-export-failure.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-003-silent-export-failure.txt"; sourceTree = "<group>"; };
+		1FD529B52F80702E00B5B0BA /* MPGT-004-silent-import-row-drops.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-004-silent-import-row-drops.txt"; sourceTree = "<group>"; };
+		1FD529B62F80702E00B5B0BA /* MPGT-005-save-button-no-feedback.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-005-save-button-no-feedback.txt"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +39,9 @@
 		1FD529402F7F2F2400B5B0BA = {
 			isa = PBXGroup;
 			children = (
+				1FD529B02F80702E00B5B0BA /* CLAUDE.md */,
+				1FD529B12F80702E00B5B0BA /* PROJECT.md */,
+				1FD529B72F80702E00B5B0BA /* tickets */,
 				1FD5294B2F7F2F2400B5B0BA /* MPGTracker */,
 				1FD5294A2F7F2F2400B5B0BA /* Products */,
 			);
@@ -43,6 +53,18 @@
 				1FD529492F7F2F2400B5B0BA /* MPGTracker.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1FD529B72F80702E00B5B0BA /* tickets */ = {
+			isa = PBXGroup;
+			children = (
+				1FD529B22F80702E00B5B0BA /* MPGT-001-silent-value-clamping.txt */,
+				1FD529B32F80702E00B5B0BA /* MPGT-002-ppg-override-affordance.txt */,
+				1FD529B42F80702E00B5B0BA /* MPGT-003-silent-export-failure.txt */,
+				1FD529B52F80702E00B5B0BA /* MPGT-004-silent-import-row-drops.txt */,
+				1FD529B62F80702E00B5B0BA /* MPGT-005-save-button-no-feedback.txt */,
+			);
+			path = tickets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
