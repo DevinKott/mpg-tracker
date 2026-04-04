@@ -17,6 +17,11 @@ struct AddEntryView: View {
 
     @Environment(\.modelContext) private var modelContext
 
+    // MARK: - Types
+
+    /// Identifies the focusable required input fields for dirty-state validation.
+    private enum FormField { case miles, gallons }
+
     // MARK: - Required field state
 
     /// Raw text for the miles driven field.
@@ -39,6 +44,12 @@ struct AddEntryView: View {
     @State private var entryDate: Date = Date()
     /// Triggers the post-save confirmation banner.
     @State private var didSave: Bool = false
+    /// Tracks which required field currently has keyboard focus.
+    @FocusState private var focusedField: FormField?
+    /// `true` once the miles field has lost focus at least once while empty.
+    @State private var milesFieldTouched = false
+    /// `true` once the gallons field has lost focus at least once while empty.
+    @State private var gallonsFieldTouched = false
 
     // MARK: - Body
 
@@ -50,6 +61,12 @@ struct AddEntryView: View {
             saveSection
         }
         .navigationTitle(String(localized: "Add Fill-Up"))
+        .onChange(of: focusedField) { oldValue, _ in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if oldValue == .miles { milesFieldTouched = true }
+                if oldValue == .gallons { gallonsFieldTouched = true }
+            }
+        }
         .overlay(alignment: .top) {
             if didSave { savedBanner }
         }
@@ -99,37 +116,59 @@ struct AddEntryView: View {
     /// Required fields: miles driven and gallons pumped.
     private var requiredFieldsSection: some View {
         Section(String(localized: "Required")) {
-            TextField(
-                String(localized: "Miles driven"),
-                text: $milesText
-            )
-            .keyboardType(.decimalPad)
-            .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
-            .accessibilityLabel(String(localized: "Miles driven"))
-            .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
+            VStack(alignment: .leading, spacing: 4) {
+                TextField(
+                    String(localized: "Miles driven"),
+                    text: $milesText
+                )
+                .keyboardType(.decimalPad)
+                .focused($focusedField, equals: .miles)
+                .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
+                .accessibilityLabel(String(localized: "Miles driven"))
+                .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
 
-            if milesExceedsMax {
-                Text(String(localized: "Max 1,000 mi"))
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .accessibilityLabel(String(localized: "Error: miles driven exceeds the maximum of 1,000"))
+                if milesExceedsMax {
+                    Text(String(localized: "Max 1,000 mi"))
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .accessibilityLabel(String(localized: "Error: miles driven exceeds the maximum of 1,000"))
+                        .transition(.opacity)
+                } else if milesFieldTouched && parsedMiles == nil {
+                    Text(String(localized: "Required"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(String(localized: "Miles driven is required"))
+                        .transition(.opacity)
+                }
             }
+            .animation(.easeInOut(duration: 0.2), value: milesExceedsMax)
 
-            TextField(
-                String(localized: "Gallons pumped"),
-                text: $gallonsText
-            )
-            .keyboardType(.decimalPad)
-            .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
-            .accessibilityLabel(String(localized: "Gallons pumped"))
-            .accessibilityHint(String(localized: "Read from the fuel pump display"))
+            VStack(alignment: .leading, spacing: 4) {
+                TextField(
+                    String(localized: "Gallons pumped"),
+                    text: $gallonsText
+                )
+                .keyboardType(.decimalPad)
+                .focused($focusedField, equals: .gallons)
+                .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
+                .accessibilityLabel(String(localized: "Gallons pumped"))
+                .accessibilityHint(String(localized: "Read from the fuel pump display"))
 
-            if gallonsExceedsMax {
-                Text(String(localized: "Max 100 gal"))
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .accessibilityLabel(String(localized: "Error: gallons pumped exceeds the maximum of 100"))
+                if gallonsExceedsMax {
+                    Text(String(localized: "Max 100 gal"))
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .accessibilityLabel(String(localized: "Error: gallons pumped exceeds the maximum of 100"))
+                        .transition(.opacity)
+                } else if gallonsFieldTouched && parsedGallons == nil {
+                    Text(String(localized: "Required"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(String(localized: "Gallons pumped is required"))
+                        .transition(.opacity)
+                }
             }
+            .animation(.easeInOut(duration: 0.2), value: gallonsExceedsMax)
         }
     }
 
@@ -277,6 +316,8 @@ struct AddEntryView: View {
         truckMPGText = ""
         notes = ""
         entryDate = Date()
+        milesFieldTouched = false
+        gallonsFieldTouched = false
     }
 
     /// Displays the saved banner briefly, then hides it.

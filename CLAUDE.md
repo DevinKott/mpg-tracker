@@ -59,6 +59,19 @@ For errors or operations with a meaningful outcome (e.g., import/export with cou
 - Banner (green capsule): simple "it worked" confirmation for quick actions (saving an entry)
 - Alert: errors, or successes that carry meaningful detail (e.g., import count)
 
+### Inline Field Validation (Dirty-State)
+For required fields where the Save button may be disabled, show an inline "Required" hint beneath the field after the user has touched and left it empty. Do not show hints on initial render — only after the field has lost focus at least once (dirty state). Pattern established in `AddEntryView` and `EditEntrySheetView`.
+
+- **Trigger:** Only after the field has lost focus at least once while empty
+- **State:** `@FocusState private var focusedField: FormField?` (private enum `FormField` with a case per required field) + per-field `@State private var xFieldTouched = false`
+- **Dirty tracking:** `.onChange(of: focusedField) { oldValue, _ in ... }` — set a field's touched flag when `oldValue == .<thatField>`; attach the modifier to the `Form` or `NavigationStack`
+- **Style:** `.font(.caption)` + `.foregroundStyle(.secondary)` (grey — passive hint, not an error)
+- **Distinction:** Required hints are grey (`.secondary`); range/format errors are red. Use `else if` so they never show simultaneously for the same field
+- **Accessibility:** Set `.accessibilityLabel` on the hint Text (e.g., `"Miles driven is required"`)
+- **Reset:** Clear all touched flags on successful save (or on form reset)
+- **Placement:** Immediately below the field, inside a `VStack(alignment: .leading, spacing: 4)` shared with range-error captions
+- **Form row vs. inline caption:** In a SwiftUI `Form`/`List`, a conditional view appears as a separate row — it animates as a *row insertion*, which `List` manages outside the normal animation system. Wrapping the field and its caption in a `VStack` makes them one Form row; the caption is then a layout child, not a separate row, so `.transition` and `.animation` work as expected. Apply `.animation(.easeInOut(duration: 0.2), value: <condition>)` to the `VStack`, not the `Section`.
+
 ## Clean Code
 - Follow Clean Code principles: meaningful names, single responsibility, DRY, and clear intent.
 - Prefer clarity over cleverness.
@@ -69,7 +82,7 @@ For errors or operations with a meaningful outcome (e.g., import/export with cou
 - `MPGCalculator` (caseless enum in `Utilities/`) is the single source of truth for MPG and price-per-gallon math; `FillUpEntry` calls it directly.
 - Price-per-gallon in `AddEntryView` is always auto-calculated from `totalPrice ÷ gallons` — there is no manual override. The PPG row is read-only; it shows "—" until both total price and gallons are entered. `EditEntrySheetView` follows the same pattern in `applyChanges()`.
 - Numeric text fields use `String` state + `.onChange` filtering (digits and `.` only) rather than `value:format:`, to preserve the empty-vs-zero distinction needed for Save button validation.
-- Range validation for `milesDriven` (max 1,000) and `gallonsPumped` (max 100) lives entirely in the form layer (`AddEntryView`, `EditEntrySheetView`) — `FillUpEntry` does **not** clamp values. Out-of-range input shows an inline red caption error beneath the field and disables the Save button via `milesExceedsMax`/`gallonsExceedsMax` computed properties.
+- Range validation for `milesDriven` (max 1,000) and `gallonsPumped` (max 100) lives entirely in the form layer (`AddEntryView`, `EditEntrySheetView`) — `FillUpEntry` does **not** clamp values. Out-of-range input shows an inline red caption error beneath the field and disables the Save button via `milesExceedsMax`/`gallonsExceedsMax` computed properties. Empty required fields show a grey "Required" hint after the field has been touched (dirty-state pattern); both forms use `@FocusState` + per-field touched flags for this.
 - `truckReportedMPG` is the SwiftData property name (schema-stable); all user-facing strings say "vehicle-reported MPG".
 - History list uses `@Query(sort: \FillUpEntry.date, order: .reverse)` and `NavigationLink(value:)` + `.navigationDestination(for: FillUpEntry.self)`.
 - `EntryDetailView` uses `@Bindable var entry: FillUpEntry`; editing is done via `EditEntrySheetView` (private struct in `EntryDetailView.swift`) which writes back to the bindable entry directly — `applyChanges()` explicitly recalculates `calculatedMPG` and `pricePerGallon` because SwiftData `@Model` accessors do not reliably trigger `didSet` observers when properties are mutated externally. After a successful save, `EditEntrySheetView` calls an `onSaved: () -> Void` callback before dismissing; `EntryDetailView` uses this to show a "Changes saved" banner via `didSaveEdit` / `showSaveConfirmation()` (same pattern as `AddEntryView`).

@@ -37,7 +37,8 @@ Each fill-up session follows a simple loop:
 
 ### Entry
 - Fast, minimal input screen optimized for use at a gas pump.
-- Required fields: miles driven (max 1,000) and gallons pumped (max 100). Out-of-range values show an inline error and block saving.
+- Required fields: miles driven (max 1,000) and gallons pumped (max 100). Out-of-range values show an inline red error and block saving.
+- After the user touches a required field and leaves it empty, a grey "Required" hint appears beneath it (dirty-state inline validation). Hints are grey; range errors are red.
 - Optional fields: total price paid, vehicle-reported MPG.
 - App auto-calculates: MPG and price per gallon (from total price ÷ gallons).
 

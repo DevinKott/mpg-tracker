@@ -53,6 +53,8 @@ struct EntryDetailView: View {
                 dismiss()
             }
             Button(String(localized: "Cancel"), role: .cancel) {}
+        } message: {
+            Text(entry.date.formatted(date: .abbreviated, time: .omitted))
         }
     }
 
@@ -158,6 +160,9 @@ struct EntryDetailView: View {
 /// - Parameter onSaved: Called after a successful save, before the sheet dismisses.
 private struct EditEntrySheetView: View {
 
+    /// Identifies the focusable required input fields for dirty-state validation.
+    private enum FormField { case miles, gallons }
+
     @Bindable var entry: FillUpEntry
     @Environment(\.dismiss) private var dismiss
 
@@ -169,6 +174,12 @@ private struct EditEntrySheetView: View {
     @State private var truckMPGText: String
     @State private var notesText: String
     @State private var selectedDate: Date
+    /// Tracks which required field currently has keyboard focus.
+    @FocusState private var focusedField: FormField?
+    /// `true` once the miles field has lost focus at least once while empty.
+    @State private var milesFieldTouched = false
+    /// `true` once the gallons field has lost focus at least once while empty.
+    @State private var gallonsFieldTouched = false
 
     init(entry: FillUpEntry, onSaved: @escaping () -> Void) {
         self.entry = entry
@@ -210,6 +221,12 @@ private struct EditEntrySheetView: View {
             }
             .navigationTitle(String(localized: "Edit Fill-Up"))
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: focusedField) { oldValue, _ in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if oldValue == .miles { milesFieldTouched = true }
+                    if oldValue == .gallons { gallonsFieldTouched = true }
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Cancel")) { dismiss() }
@@ -241,6 +258,7 @@ private struct EditEntrySheetView: View {
                     TextField("", text: $milesText)
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .miles)
                         .onChange(of: milesText) { _, new in milesText = filterNumeric(new) }
                     Text(String(localized: "mi"))
                         .foregroundStyle(.secondary)
@@ -250,8 +268,16 @@ private struct EditEntrySheetView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                         .accessibilityLabel(String(localized: "Error: miles driven exceeds the maximum of 1,000"))
+                        .transition(.opacity)
+                } else if milesFieldTouched && parsedMiles == nil {
+                    Text(String(localized: "Required"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(String(localized: "Miles driven is required"))
+                        .transition(.opacity)
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: milesExceedsMax)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(String(localized: "Miles driven"))
             .accessibilityHint(String(localized: "Read from the vehicle's trip odometer"))
@@ -264,6 +290,7 @@ private struct EditEntrySheetView: View {
                     TextField("", text: $gallonsText)
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .gallons)
                         .onChange(of: gallonsText) { _, new in gallonsText = filterNumeric(new) }
                     Text(String(localized: "gal"))
                         .foregroundStyle(.secondary)
@@ -273,8 +300,16 @@ private struct EditEntrySheetView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                         .accessibilityLabel(String(localized: "Error: gallons pumped exceeds the maximum of 100"))
+                        .transition(.opacity)
+                } else if gallonsFieldTouched && parsedGallons == nil {
+                    Text(String(localized: "Required"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(String(localized: "Gallons pumped is required"))
+                        .transition(.opacity)
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: gallonsExceedsMax)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(String(localized: "Gallons pumped"))
             .accessibilityHint(String(localized: "Read from the fuel pump display"))
