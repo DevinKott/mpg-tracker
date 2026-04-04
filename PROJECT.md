@@ -51,6 +51,13 @@ Each fill-up session follows a simple loop:
 - Optional overlay: calculated MPG vs. vehicle-reported MPG for comparison.
 - Fuel cost trends over time.
 
+### Confirmation Feedback
+- Transient success banners appear at the top of the screen after user actions (e.g., saving a fill-up).
+- Style: green gradient capsule, white medium-weight text, slides in from the top and fades out after ~1.5 seconds.
+- All new confirmation banners must follow this pattern for visual consistency.
+- Errors and outcomes with meaningful detail (e.g., import counts, export failures) use a standard system alert with an OK button — not a banner. Title format: "X Error" / "X Successful". Message: short plain-English sentence.
+- **Rule of thumb:** banner for simple "it worked", alert for errors or results that need explanation.
+
 ### Settings & About
 - Settings page with an About section.
 - About content: app name, brief purpose statement, and a note crediting the developer.

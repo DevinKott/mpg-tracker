@@ -20,6 +20,8 @@ struct EntryDetailView: View {
 
     @State private var isEditing = false
     @State private var showDeleteConfirmation = false
+    /// Triggers the post-edit confirmation banner.
+    @State private var didSaveEdit: Bool = false
 
     var body: some View {
         Form {
@@ -30,6 +32,9 @@ struct EntryDetailView: View {
         }
         .navigationTitle(String(localized: "Fill-Up Detail"))
         .navigationBarTitleDisplayMode(.inline)
+        .overlay(alignment: .top) {
+            if didSaveEdit { savedBanner }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(String(localized: "Edit")) { isEditing = true }
@@ -37,7 +42,7 @@ struct EntryDetailView: View {
             }
         }
         .sheet(isPresented: $isEditing) {
-            EditEntrySheetView(entry: entry)
+            EditEntrySheetView(entry: entry, onSaved: showSaveConfirmation)
         }
         .alert(
             String(localized: "Delete this fill-up?"),
@@ -104,6 +109,28 @@ struct EntryDetailView: View {
 
     // MARK: - Helpers
 
+    /// Brief banner shown after a successful edit save.
+    private var savedBanner: some View {
+        Text(String(localized: "Changes saved"))
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.green.gradient, in: Capsule())
+            .padding(.top, 8)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .accessibilityLabel(String(localized: "Changes saved successfully"))
+    }
+
+    /// Displays the saved banner briefly, then hides it.
+    private func showSaveConfirmation() {
+        withAnimation { didSaveEdit = true }
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            withAnimation { didSaveEdit = false }
+        }
+    }
+
     /// A label–value row with an optional trailing unit suffix and combined accessibility support.
     private func detailRow(label: String, value: String, unit: String? = nil) -> some View {
         HStack {
@@ -128,10 +155,13 @@ struct EntryDetailView: View {
 ///
 /// Pre-populates text fields from the entry's current values. On save, writes
 /// updated values directly to the `@Bindable` entry — SwiftData auto-persists.
+/// - Parameter onSaved: Called after a successful save, before the sheet dismisses.
 private struct EditEntrySheetView: View {
 
     @Bindable var entry: FillUpEntry
     @Environment(\.dismiss) private var dismiss
+
+    let onSaved: () -> Void
 
     @State private var milesText: String
     @State private var gallonsText: String
@@ -140,8 +170,9 @@ private struct EditEntrySheetView: View {
     @State private var notesText: String
     @State private var selectedDate: Date
 
-    init(entry: FillUpEntry) {
+    init(entry: FillUpEntry, onSaved: @escaping () -> Void) {
         self.entry = entry
+        self.onSaved = onSaved
         _milesText = State(initialValue: String(entry.milesDriven))
         _gallonsText = State(initialValue: String(entry.gallonsPumped))
         _totalPriceText = State(initialValue: entry.totalPricePaid.map { String($0) } ?? "")
@@ -316,6 +347,7 @@ private struct EditEntrySheetView: View {
         entry.truckReportedMPG = Double(truckMPGText.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }
         let trimmedNotes = notesText.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
+        onSaved()
         dismiss()
     }
 

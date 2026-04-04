@@ -32,6 +32,33 @@
 - Focus on *why* and *what* — skip comments that just restate the code.
 - Keep comments short; if a comment needs more than 2 lines, consider whether the code itself can be made clearer first.
 
+## UI Patterns
+
+### Transient Confirmation Banner (Toast)
+When an action succeeds and needs brief confirmation feedback, use this established pattern (first introduced in `AddEntryView`):
+
+- **Placement:** `.overlay(alignment: .top)` on the view's root container
+- **Style:** green gradient `Capsule` with white `.subheadline.weight(.medium)` text; `.padding(.horizontal, 16)`, `.padding(.vertical, 10)`, `.padding(.top, 8)`
+- **Animation:** wrap show/hide in `withAnimation`; use `.transition(.move(edge: .top).combined(with: .opacity))`
+- **Duration:** 1.5 seconds — `Task.sleep(nanoseconds: 1_500_000_000)`
+- **State:** a `@State private var didSave: Bool = false` flag on the presenting view; a `showSaveConfirmation()` helper sets it `true`, spawns the reset `Task`
+- **Accessibility:** set `.accessibilityLabel` on the banner `Text` (e.g., `"Fill-up saved successfully"`)
+
+Always match this pattern exactly when adding new confirmation banners so the feedback style stays consistent across the app.
+
+### Error & Outcome Alerts
+For errors or operations with a meaningful outcome (e.g., import/export with counts or error detail), use a standard SwiftUI `.alert` — not a banner. Pattern established in `SettingsView`:
+
+- **State:** three vars — `@State private var showAlert = false`, `alertTitle = ""`, `alertMessage = ""`
+- **Modifier:** `.alert(alertTitle, isPresented: $showAlert) { Button(String(localized: "OK"), role: .cancel) {} } message: { Text(alertMessage) }`
+- **Usage:** set `alertTitle` and `alertMessage`, then set `showAlert = true` — no helper function needed
+- **Title format:** `"X Error"` for failures, `"X Successful"` for success outcomes with detail
+- **Message format:** short plain-English sentence ending with a period (e.g., `"Export failed. Please try again."`)
+
+**When to use alert vs. banner:**
+- Banner (green capsule): simple "it worked" confirmation for quick actions (saving an entry)
+- Alert: errors, or successes that carry meaningful detail (e.g., import count)
+
 ## Clean Code
 - Follow Clean Code principles: meaningful names, single responsibility, DRY, and clear intent.
 - Prefer clarity over cleverness.
@@ -45,7 +72,7 @@
 - Range validation for `milesDriven` (max 1,000) and `gallonsPumped` (max 100) lives entirely in the form layer (`AddEntryView`, `EditEntrySheetView`) — `FillUpEntry` does **not** clamp values. Out-of-range input shows an inline red caption error beneath the field and disables the Save button via `milesExceedsMax`/`gallonsExceedsMax` computed properties.
 - `truckReportedMPG` is the SwiftData property name (schema-stable); all user-facing strings say "vehicle-reported MPG".
 - History list uses `@Query(sort: \FillUpEntry.date, order: .reverse)` and `NavigationLink(value:)` + `.navigationDestination(for: FillUpEntry.self)`.
-- `EntryDetailView` uses `@Bindable var entry: FillUpEntry`; editing is done via `EditEntrySheetView` (private struct in `EntryDetailView.swift`) which writes back to the bindable entry directly — `applyChanges()` explicitly recalculates `calculatedMPG` and `pricePerGallon` because SwiftData `@Model` accessors do not reliably trigger `didSet` observers when properties are mutated externally.
+- `EntryDetailView` uses `@Bindable var entry: FillUpEntry`; editing is done via `EditEntrySheetView` (private struct in `EntryDetailView.swift`) which writes back to the bindable entry directly — `applyChanges()` explicitly recalculates `calculatedMPG` and `pricePerGallon` because SwiftData `@Model` accessors do not reliably trigger `didSet` observers when properties are mutated externally. After a successful save, `EditEntrySheetView` calls an `onSaved: () -> Void` callback before dismissing; `EntryDetailView` uses this to show a "Changes saved" banner via `didSaveEdit` / `showSaveConfirmation()` (same pattern as `AddEntryView`).
 - `HistoryView` supports swipe-to-delete (`onDelete`) and multi-select bulk delete via an Edit/Done toolbar toggle; `FillUpEntryRow` is a private struct in the same file that renders each list row.
 - `FillUpEntry` has an optional `notes: String?` property; it is displayed in `EntryDetailView` and editable in `EditEntrySheetView`.
 - `StatsView` uses a private `StatsSnapshot` struct to compute all aggregate values once per render; charts use Swift Charts with `chronologicalEntries` (ascending date sort); chart export uses `ImageRenderer` + `UIActivityViewController` (private `ActivityViewController` bridging struct inside `StatsView.swift`); VoiceOver support via `AXChartDescriptorRepresentable` (`MPGChartDescriptor`, `FuelCostChartDescriptor`).
