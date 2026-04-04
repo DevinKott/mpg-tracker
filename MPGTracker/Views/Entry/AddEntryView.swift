@@ -33,13 +33,6 @@ struct AddEntryView: View {
     /// Free-text note for this fill-up.
     @State private var notes: String = ""
 
-    // MARK: - Price-per-gallon override state
-
-    /// Raw text for the manual price-per-gallon override.
-    @State private var priceOverrideText: String = ""
-    /// Whether the user has switched to manual price-per-gallon entry.
-    @State private var isPriceOverridden: Bool = false
-
     // MARK: - UI state
 
     /// The date and time of this fill-up, defaulting to now.
@@ -88,14 +81,6 @@ struct AddEntryView: View {
               let total = Double(totalPriceText.trimmingCharacters(in: .whitespaces)),
               total > 0 else { return nil }
         return MPGCalculator.calculatePricePerGallon(totalPrice: total, gallons: gallons)
-    }
-
-    /// The price-per-gallon value to persist: the user's override if active, else auto-calculated.
-    private var effectivePricePerGallon: Double? {
-        if isPriceOverridden {
-            return Double(priceOverrideText.trimmingCharacters(in: .whitespaces))
-        }
-        return liveCalculatedPricePerGallon
     }
 
     /// `true` when the parsed miles value exceeds the allowed maximum.
@@ -207,48 +192,21 @@ struct AddEntryView: View {
         }
     }
 
-    /// Price-per-gallon row: auto-calculated display by default; editable on override.
-    @ViewBuilder
+    /// Read-only row showing live calculated price per gallon from total price and gallons.
     private var pricePerGallonRow: some View {
-        if isPriceOverridden {
-            HStack {
-                TextField(
-                    String(localized: "Price per gallon ($)"),
-                    text: $priceOverrideText
-                )
-                .keyboardType(.decimalPad)
-                .accessibilityLabel(String(localized: "Price per gallon (manual)"))
-                .accessibilityHint(String(localized: "Your manually entered price per gallon"))
-
-                Button(String(localized: "Use calculated")) {
-                    isPriceOverridden = false
-                    priceOverrideText = ""
-                }
-                .font(.caption)
-                .accessibilityLabel(String(localized: "Switch to calculated price per gallon"))
-            }
-        } else {
-            HStack {
-                Text(String(localized: "Price per gallon"))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(liveCalculatedPricePerGallon.map { String(format: "$%.3f", $0) } ?? "—")
-                    .foregroundStyle(liveCalculatedPricePerGallon == nil ? .tertiary : .primary)
-                    .monospacedDigit()
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                priceOverrideText = liveCalculatedPricePerGallon.map { String(format: "%.3f", $0) } ?? ""
-                isPriceOverridden = true
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(
-                liveCalculatedPricePerGallon.map { String(localized: "Price per gallon: \(String(format: "$%.3f", $0))") }
-                ?? String(localized: "Price per gallon: not yet available")
-            )
-            .accessibilityHint(String(localized: "Tap to enter a manual price per gallon"))
-            .accessibilityAddTraits(.isButton)
+        HStack {
+            Text(String(localized: "Price per gallon"))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(liveCalculatedPricePerGallon.map { String(format: "$%.3f", $0) } ?? "—")
+                .foregroundStyle(liveCalculatedPricePerGallon == nil ? .tertiary : .primary)
+                .monospacedDigit()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            liveCalculatedPricePerGallon.map { String(localized: "Price per gallon: \(String(format: "$%.3f", $0))") }
+            ?? String(localized: "Price per gallon: not yet available")
+        )
     }
 
     /// Section containing the Save button.
@@ -307,11 +265,6 @@ struct AddEntryView: View {
         )
 
         modelContext.insert(entry)
-
-        if let override = effectivePricePerGallon, isPriceOverridden {
-            entry.pricePerGallon = override
-        }
-
         resetForm()
         showSaveConfirmation()
     }
@@ -323,8 +276,6 @@ struct AddEntryView: View {
         totalPriceText = ""
         truckMPGText = ""
         notes = ""
-        priceOverrideText = ""
-        isPriceOverridden = false
         entryDate = Date()
     }
 

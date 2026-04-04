@@ -26,7 +26,7 @@ Each fill-up session follows a simple loop:
 | Gallons pumped | User input | Read from the pump |
 | MPG (calculated) | App-derived | `miles ÷ gallons` |
 | Total price paid | User input (optional) | Total cost at the pump |
-| Price per gallon | App-derived or user input | Calculated from total ÷ gallons, or entered manually |
+| Price per gallon | App-derived | Calculated from total price ÷ gallons |
 | Vehicle-reported MPG | User input (optional) | What the vehicle's computer displayed — for comparison |
 | Notes | User input (optional) | Free-text note about the fill-up |
 | Date | Auto-captured | Timestamp of the entry |
@@ -39,8 +39,7 @@ Each fill-up session follows a simple loop:
 - Fast, minimal input screen optimized for use at a gas pump.
 - Required fields: miles driven (max 1,000) and gallons pumped (max 100). Out-of-range values show an inline error and block saving.
 - Optional fields: total price paid, vehicle-reported MPG.
-- App auto-calculates: MPG and price per gallon.
-- Allow manual override of calculated price per gallon.
+- App auto-calculates: MPG and price per gallon (from total price ÷ gallons).
 
 ### History
 - Scrollable log of all past fill-up sessions.

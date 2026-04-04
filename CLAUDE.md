@@ -40,6 +40,7 @@
 ## Current State
 - Steps 1–6 complete: data model (`FillUpEntry`), tab shell (`RootView`), entry form (`AddEntryView`), history screen (`HistoryView`, `EntryDetailView`), stats screen (`StatsView`), and import/export (`DataTransfer`, `SettingsView`) are implemented.
 - `MPGCalculator` (caseless enum in `Utilities/`) is the single source of truth for MPG and price-per-gallon math; `FillUpEntry` calls it directly.
+- Price-per-gallon in `AddEntryView` is always auto-calculated from `totalPrice ÷ gallons` — there is no manual override. The PPG row is read-only; it shows "—" until both total price and gallons are entered. `EditEntrySheetView` follows the same pattern in `applyChanges()`.
 - Numeric text fields use `String` state + `.onChange` filtering (digits and `.` only) rather than `value:format:`, to preserve the empty-vs-zero distinction needed for Save button validation.
 - Range validation for `milesDriven` (max 1,000) and `gallonsPumped` (max 100) lives entirely in the form layer (`AddEntryView`, `EditEntrySheetView`) — `FillUpEntry` does **not** clamp values. Out-of-range input shows an inline red caption error beneath the field and disables the Save button via `milesExceedsMax`/`gallonsExceedsMax` computed properties.
 - `truckReportedMPG` is the SwiftData property name (schema-stable); all user-facing strings say "vehicle-reported MPG".
