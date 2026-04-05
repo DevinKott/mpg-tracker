@@ -2,55 +2,30 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- This app does not track users or collect any data. -->
-    <key>NSPrivacyTracking</key>
-    <false/>
-
-    <!-- No tracking domains. -->
-    <key>NSPrivacyTrackingDomains</key>
-    <array/>
-
-    <!-- No data is collected or sent off-device. -->
-    <key>NSPrivacyCollectedDataTypes</key>
-    <array/>
-
-    <!--
-        Required reasons for system APIs used by this app and its dependencies (SwiftData/SQLite).
-        See: https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api
-    -->
-    <key>NSPrivacyAccessedAPITypes</key>
-    <array>
-
-        <!--
-            File timestamp APIs — used by SwiftData/SQLite to track when the
-            database file was last modified.
-            Reason C617.1: file timestamp access is required for correct
-            operation of the on-device database.
-        -->
-        <dict>
-            <key>NSPrivacyAccessedAPIType</key>
-            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
-            <key>NSPrivacyAccessedAPITypeReasons</key>
-            <array>
-                <string>C617.1</string>
-            </array>
-        </dict>
-
-        <!--
-            Disk space APIs — used by SwiftData/SQLite to verify sufficient
-            space before writing to the database.
-            Reason E174.1: disk space check is part of normal file I/O
-            when managing the local database.
-        -->
-        <dict>
-            <key>NSPrivacyAccessedAPIType</key>
-            <string>NSPrivacyAccessedAPICategoryDiskSpace</string>
-            <key>NSPrivacyAccessedAPITypeReasons</key>
-            <array>
-                <string>E174.1</string>
-            </array>
-        </dict>
-
-    </array>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -14,8 +14,8 @@ import Accessibility
 struct StatsView: View {
 
     @Query(sort: \FillUpEntry.date, order: .reverse) private var entries: [FillUpEntry]
-    @State private var showMpgShare = false
-    @State private var showFuelCostShare = false
+    @State private var mpgShareImage: ChartShareImage? = nil
+    @State private var fuelCostShareImage: ChartShareImage? = nil
     @State private var showCalculatedMPG = true
     @State private var showVehicleReportedMPG = true
 
@@ -53,15 +53,11 @@ struct StatsView: View {
             .padding()
         }
         .navigationTitle(String(localized: "Stats"))
-        .sheet(isPresented: $showMpgShare) {
-            if let image = renderImage(from: mpgChartView) {
-                ActivityViewController(image: image)
-            }
+        .sheet(item: $mpgShareImage) { share in
+            ActivityViewController(image: share.image)
         }
-        .sheet(isPresented: $showFuelCostShare) {
-            if let image = renderImage(from: fuelCostChartView) {
-                ActivityViewController(image: image)
-            }
+        .sheet(item: $fuelCostShareImage) { share in
+            ActivityViewController(image: share.image)
         }
     }
 
@@ -115,7 +111,9 @@ struct StatsView: View {
                 mpgChartView
                     .accessibilityChartDescriptor(MPGChartDescriptor(entries: chronologicalEntries))
                 Button {
-                    showMpgShare = true
+                    if let image = renderImage(from: mpgChartView) {
+                        mpgShareImage = ChartShareImage(image: image)
+                    }
                 } label: {
                     Label(
                         String(localized: "Share MPG Chart"),
@@ -160,7 +158,9 @@ struct StatsView: View {
                             FuelCostChartDescriptor(entries: chronologicalEntries)
                         )
                     Button {
-                        showFuelCostShare = true
+                        if let image = renderImage(from: fuelCostChartView) {
+                            fuelCostShareImage = ChartShareImage(image: image)
+                        }
                     } label: {
                         Label(
                             String(localized: "Share Fuel Cost Chart"),
@@ -288,6 +288,14 @@ struct StatsView: View {
     private var stats: StatsSnapshot {
         StatsSnapshot(entries: entries)
     }
+}
+
+// MARK: - ChartShareImage
+
+/// An `Identifiable` wrapper around a rendered chart `UIImage`, used to drive `.sheet(item:)`.
+private struct ChartShareImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }
 
 // MARK: - ActivityViewController

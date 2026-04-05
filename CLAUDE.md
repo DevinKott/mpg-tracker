@@ -22,6 +22,38 @@
 - Prefer lazy evaluation and efficient data structures.
 - Avoid unnecessary work on the main thread.
 
+### Background Work Pattern (HIG: Loading)
+Any CPU or I/O work that blocks the main thread before a UI transition (e.g., generating a file before a share sheet) must be moved off-main. Apple HIG states: *"the best content-loading experience finishes before people become aware of it."*
+
+Pattern for SwiftData + background Task:
+```swift
+func exportSomething() {
+    let snapshot = entries          // capture on main thread — SwiftData models are main-actor bound
+    Task.detached(priority: .userInitiated) {
+        // CPU/IO work here
+        await MainActor.run { /* update state */ }
+    }
+}
+```
+
+### Progress Indicators (HIG: Progress Indicators)
+- **Do not show** a spinner/progress indicator for operations that complete in under ~2–3 seconds. Apple HIG: *"Don't display the indicator for quick operations because it's likely to disappear before anyone notices."* A flash of a spinner is worse UX than a brief delay.
+- **Do show** a progress indicator only when an operation reliably takes 2–3+ seconds (e.g., exporting a very large dataset or doing network I/O).
+- For file export: the share sheet appearing is itself sufficient feedback — no pre-sheet spinner needed.
+
+### Share Sheet Pattern (HIG: Activity Views)
+Always use `.sheet(item:)` — not `.sheet(isPresented:)` with a separate data state variable — when the sheet's content depends on data produced at tap time. `.sheet(item:)` passes the data directly into the content closure, eliminating the SwiftUI render-cycle race where the sheet can open before the data state has propagated.
+
+```swift
+// Correct — single state mutation, no race
+@State private var shareURL: ShareURL? = nil
+.sheet(item: $shareURL) { share in ActivityViewController(items: [share.url]) }
+
+// Avoid — two mutations, sheet can open with stale data
+@State private var shareItems: [Any] = []
+@State private var isShowingShareSheet = false
+```
+
 ## Accessibility & Localization
 - All user-facing strings must use `NSLocalizedString` or `String(localized:)`.
 - UI elements must have accessibility labels, hints, and traits set appropriately.
@@ -90,5 +122,5 @@ For required fields where the Save button may be disabled, show an inline "Requi
 - `FillUpEntry` has an optional `notes: String?` property; it is displayed in `EntryDetailView` and editable in `EditEntrySheetView`.
 - `StatsView` uses a private `StatsSnapshot` struct to compute all aggregate values once per render; charts use Swift Charts with `chronologicalEntries` (ascending date sort); chart export uses `ImageRenderer` + `UIActivityViewController` (private `ActivityViewController` bridging struct inside `StatsView.swift`); VoiceOver support via `AXChartDescriptorRepresentable` (`MPGChartDescriptor`, `FuelCostChartDescriptor`).
 - `DataTransfer` (caseless enum in `Utilities/`) has pure static functions: `exportCSV`, `exportJSON`, `importCSV`. Uses a private `FillUpEntryDTO: Codable` for JSON; CSV uses ISO 8601 dates and RFC 4180 quoting. `importCSV` now `throws` (`DataTransfer.ImportError.missingRequiredColumns`) — if the header row is missing any of `date`, `milesDriven`, or `gallonsPumped`, the entire import is rejected before any rows are processed. Column lookup is name-based (header row → `[String: Int]` map), not positional, so reordered columns are handled correctly. Malformed data rows and out-of-range values (miles > 1,000 or gallons > 100) are counted as skipped, not silently dropped.
-- `SettingsView` (`Views/Settings/`) has a Data section (CSV export only, CSV import via `.fileImporter`) and a completed About section (app name + version from `Bundle.main`, purpose, privacy note, developer credit). JSON export code (`exportJSON`, `writeTempFile`) is kept in the file but not surfaced in the UI. Export uses a temp-file + `UIActivityViewController` (private `ActivityViewController` in the same file). Export failure shows an alert ("Export Error" / "Export failed. Please try again."). Import feedback: clean import (0 skipped) shows a green banner; partial import shows an alert with both imported and skipped counts; all import errors show an alert. `RootView` uses `SettingsView` in the settings tab.
+- `SettingsView` (`Views/Settings/`) has a Data section (CSV export only, CSV import via `.fileImporter`) and a completed About section (app name + version from `Bundle.main`, purpose, privacy note, developer credit). JSON export code (`exportJSON`, `writeTempFile`) is kept in the file but not surfaced in the UI. Export writes a temp file and presents a share sheet via a private `ShareURL: Identifiable` wrapper and `.sheet(item: $shareURL)` (not `isPresented` — avoids a SwiftUI render-cycle race). Both `exportCSV` and `exportJSON` snapshot `entries` on the main thread then do all work in `Task.detached(priority: .userInitiated)`, hopping back to `MainActor` to set state. Export failure shows an alert ("Export Error" / "Export failed. Please try again."). Import feedback: clean import (0 skipped) shows a green banner; partial import shows an alert with both imported and skipped counts; all import errors show an alert. `RootView` uses `SettingsView` in the settings tab.
 - Units toggle (miles/km) is a planned TODO — not yet implemented.

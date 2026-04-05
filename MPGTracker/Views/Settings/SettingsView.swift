@@ -16,8 +16,7 @@ struct SettingsView: View {
     @Query private var entries: [FillUpEntry]
 
     @State private var isImporting = false
-    @State private var shareItems: [Any] = []
-    @State private var isShowingShareSheet = false
+    @State private var shareURL: ShareURL? = nil
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
@@ -40,8 +39,8 @@ struct SettingsView: View {
         ) { result in
             handleImport(result: result)
         }
-        .sheet(isPresented: $isShowingShareSheet) {
-            ActivityViewController(items: shareItems)
+        .sheet(item: $shareURL) { share in
+            ActivityViewController(items: [share.url])
         }
         .alert(alertTitle, isPresented: $showAlert) {
             Button(String(localized: "OK"), role: .cancel) {}
@@ -120,30 +119,44 @@ struct SettingsView: View {
 
     // MARK: - Export
 
-    /// Generates a CSV export and presents the share sheet.
+    /// Generates a CSV string on the main thread, then writes the temp file on a background thread.
+    ///
+    /// `DataTransfer.exportCSV` takes `[FillUpEntry]` (`@MainActor`-bound), so string generation
+    /// must stay on main. Only the disk write is offloaded.
     private func exportCSV() {
         let csv = DataTransfer.exportCSV(entries: entries)
-        guard let data = csv.data(using: .utf8),
-              let url = writeTempFile(name: "mpgtracker_export.csv", data: data) else {
+        guard let data = csv.data(using: .utf8) else {
             alertTitle = String(localized: "Export Error")
             alertMessage = String(localized: "Export failed. Please try again.")
             showAlert = true
             return
         }
-        shareItems = [url]
-        isShowingShareSheet = true
+        Task.detached(priority: .userInitiated) {
+            guard let url = writeTempFile(name: "mpgtracker_export.csv", data: data) else {
+                await MainActor.run {
+                    alertTitle = String(localized: "Export Error")
+                    alertMessage = String(localized: "Export failed. Please try again.")
+                    showAlert = true
+                }
+                return
+            }
+            await MainActor.run { shareURL = ShareURL(url: url) }
+        }
     }
 
-    /// Generates a JSON export and presents the share sheet.
+    /// Generates JSON data on the main thread, then writes the temp file on a background thread.
     private func exportJSON() {
-        guard let data = try? DataTransfer.exportJSON(entries: entries),
-              let url = writeTempFile(name: "mpgtracker_export.json", data: data) else { return }
-        shareItems = [url]
-        isShowingShareSheet = true
+        guard let data = try? DataTransfer.exportJSON(entries: entries) else { return }
+        Task.detached(priority: .userInitiated) {
+            guard let url = writeTempFile(name: "mpgtracker_export.json", data: data) else { return }
+            await MainActor.run { shareURL = ShareURL(url: url) }
+        }
     }
 
     /// Writes `data` to a temp file and returns its URL. Returns `nil` on failure.
-    private func writeTempFile(name: String, data: Data) -> URL? {
+    ///
+    /// Marked `nonisolated` — accesses no instance state, safe to call from any thread.
+    private nonisolated func writeTempFile(name: String, data: Data) -> URL? {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try data.write(to: url, options: .atomic)
@@ -168,18 +181,27 @@ struct SettingsView: View {
         }
     }
 
-    /// Parses a CSV file at the given URL and inserts the resulting entries.
+    /// Reads the CSV file on a background thread, then parses and inserts entries on the main thread.
     private func importEntries(from url: URL) {
         let accessing = url.startAccessingSecurityScopedResource()
-        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-
-        guard let csv = try? String(contentsOf: url, encoding: .utf8) else {
-            alertTitle = String(localized: "Import Error")
-            alertMessage = String(localized: "Could not read the selected file.")
-            showAlert = true
-            return
+        Task.detached(priority: .userInitiated) {
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            guard let csv = try? String(contentsOf: url, encoding: .utf8) else {
+                await MainActor.run {
+                    alertTitle = String(localized: "Import Error")
+                    alertMessage = String(localized: "Could not read the selected file.")
+                    showAlert = true
+                }
+                return
+            }
+            await MainActor.run {
+                parseAndInsert(csv: csv)
+            }
         }
+    }
 
+    /// Parses a CSV string and inserts valid entries into the model context.
+    private func parseAndInsert(csv: String) {
         let result: (entries: [FillUpEntry], skippedCount: Int)
         do {
             result = try DataTransfer.importCSV(csv)
@@ -222,6 +244,14 @@ struct SettingsView: View {
             showAlert = true
         }
     }
+}
+
+// MARK: - ShareURL
+
+/// An `Identifiable` wrapper around a `URL`, used to drive `.sheet(item:)` for share-sheet presentation.
+private struct ShareURL: Identifiable {
+    let id = UUID()
+    let url: URL
 }
 
 // MARK: - ActivityViewController
