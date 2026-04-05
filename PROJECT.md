@@ -79,3 +79,20 @@ Each fill-up session follows a simple loop:
 - **Personal, not social.** This is a private tracking tool. No accounts, no cloud sync, no tracking, no analytics. User data stays on-device and is never transmitted anywhere.
 - **No monetization traps.** No ads. No subscriptions. No paywalled features. The app is a one-time tool that does its job and gets out of the way.
 - **Sharing is opt-in and user-initiated.** The only sharing surface is the user explicitly exporting a chart image from their own device. Nothing is shared automatically or silently.
+
+---
+
+## Ticket History
+
+| Ticket | Description |
+|---|---|
+| MPGT-006 | Add miles/metric units toggle — all unit labels and calculated values are hardcoded to imperial with no way to switch to km/L. |
+| MPGT-007 | History list has no search or filter — finding a specific entry in a large list requires manual scrolling. |
+| MPGT-008 | Importing the same CSV twice silently creates duplicate entries due to fresh UUIDs assigned on every import. |
+| MPGT-009 | StatsSnapshot recomputed on every view render — multiple array passes run on every body evaluation instead of once per data change. |
+| MPGT-010 | chronologicalEntries and priceDataEntries re-sorted redundantly — each computed property re-sorts the full array on every call site per render. |
+| MPGT-011 | Chart export blocks main thread — ImageRenderer renders at 3× scale synchronously on the main actor, freezing the UI before the share sheet appears. |
+| MPGT-012 | CSV import parsing runs on main thread — DataTransfer.importCSV() and all SwiftData inserts are dispatched back to MainActor, blocking the UI for large files. |
+| MPGT-013 | AddEntryView re-parses all fields on every keystroke — computed properties for parsed values and isSaveEnabled re-run on every body evaluation triggered by text input. |
+| MPGT-009 | StatsSnapshot recomputed on every view render — replaced computed `stats` property with a `@State` stored property refreshed via `.onChange(of: entries)`. |
+| MPGT-010 | chronologicalEntries and priceDataEntries re-sorted redundantly — folded both into StatsSnapshot so the sort runs once per data change, not once per call site per render. |

@@ -13,6 +13,9 @@
 		1FD529FD2F8156DD00B5B0BA /* MPGT-006-units-toggle.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-006-units-toggle.txt"; sourceTree = "<group>"; };
 		1FD529FE2F8156DD00B5B0BA /* MPGT-007-history-no-search.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-007-history-no-search.txt"; sourceTree = "<group>"; };
 		1FD529FF2F8156DD00B5B0BA /* MPGT-008-import-duplicates.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-008-import-duplicates.txt"; sourceTree = "<group>"; };
+		1FD52A612F82B01400B5B0BA /* MPGT-011-statsview-imagerenderer-main-thread.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-011-statsview-imagerenderer-main-thread.txt"; sourceTree = "<group>"; };
+		1FD52A622F82B01400B5B0BA /* MPGT-012-settings-csv-import-main-thread.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-012-settings-csv-import-main-thread.txt"; sourceTree = "<group>"; };
+		1FD52A632F82B01400B5B0BA /* MPGT-013-addentry-computed-props-on-keystroke.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "MPGT-013-addentry-computed-props-on-keystroke.txt"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -56,6 +59,9 @@
 		1FD529B72F80702E00B5B0BA /* tickets */ = {
 			isa = PBXGroup;
 			children = (
+				1FD52A612F82B01400B5B0BA /* MPGT-011-statsview-imagerenderer-main-thread.txt */,
+				1FD52A622F82B01400B5B0BA /* MPGT-012-settings-csv-import-main-thread.txt */,
+				1FD52A632F82B01400B5B0BA /* MPGT-013-addentry-computed-props-on-keystroke.txt */,
 				1FD529FD2F8156DD00B5B0BA /* MPGT-006-units-toggle.txt */,
 				1FD529FE2F8156DD00B5B0BA /* MPGT-007-history-no-search.txt */,
 				1FD529FF2F8156DD00B5B0BA /* MPGT-008-import-duplicates.txt */,

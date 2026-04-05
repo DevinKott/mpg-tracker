@@ -18,6 +18,8 @@ struct StatsView: View {
     @State private var fuelCostShareImage: ChartShareImage? = nil
     @State private var showCalculatedMPG = true
     @State private var showVehicleReportedMPG = true
+    /// Cached aggregate statistics. Recomputed only when `entries` changes.
+    @State private var stats = StatsSnapshot(entries: [])
 
     var body: some View {
         if entries.count < 2 {
@@ -53,6 +55,12 @@ struct StatsView: View {
             .padding()
         }
         .navigationTitle(String(localized: "Stats"))
+        .onAppear {
+            stats = StatsSnapshot(entries: entries)
+        }
+        .onChange(of: entries) { _, newEntries in
+            stats = StatsSnapshot(entries: newEntries)
+        }
         .sheet(item: $mpgShareImage) { share in
             ActivityViewController(image: share.image)
         }
@@ -109,7 +117,7 @@ struct StatsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 mpgSeriesToggleRow
                 mpgChartView
-                    .accessibilityChartDescriptor(MPGChartDescriptor(entries: chronologicalEntries))
+                    .accessibilityChartDescriptor(MPGChartDescriptor(entries: stats.chronologicalEntries))
                 Button {
                     if let image = renderImage(from: mpgChartView) {
                         mpgShareImage = ChartShareImage(image: image)
@@ -155,7 +163,7 @@ struct StatsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     fuelCostChartView
                         .accessibilityChartDescriptor(
-                            FuelCostChartDescriptor(entries: chronologicalEntries)
+                            FuelCostChartDescriptor(entries: stats.chronologicalEntries)
                         )
                     Button {
                         if let image = renderImage(from: fuelCostChartView) {
@@ -198,7 +206,7 @@ struct StatsView: View {
         } else {
             Chart {
                 if showCalculatedMPG {
-                    ForEach(chronologicalEntries) { entry in
+                    ForEach(stats.chronologicalEntries) { entry in
                         LineMark(
                             x: .value(String(localized: "Date"), entry.date),
                             y: .value(String(localized: "Calculated MPG"), entry.calculatedMPG)
@@ -212,7 +220,7 @@ struct StatsView: View {
                     }
                 }
                 if showVehicle {
-                    ForEach(chronologicalEntries.filter { $0.truckReportedMPG != nil }) { entry in
+                    ForEach(stats.chronologicalEntries.filter { $0.truckReportedMPG != nil }) { entry in
                         LineMark(
                             x: .value(String(localized: "Date"), entry.date),
                             y: .value(String(localized: "Vehicle-Reported MPG"), entry.truckReportedMPG!)
@@ -235,7 +243,7 @@ struct StatsView: View {
     /// The fuel cost per gallon line chart — extracted for use with `ImageRenderer`.
     private var fuelCostChartView: some View {
         Chart {
-            ForEach(priceDataEntries) { entry in
+            ForEach(stats.priceDataEntries) { entry in
                 LineMark(
                     x: .value(String(localized: "Date"), entry.date),
                     y: .value(String(localized: "Price Per Gallon"), entry.pricePerGallon!)
@@ -272,22 +280,6 @@ struct StatsView: View {
         return renderer.uiImage
     }
 
-    /// Entries sorted oldest-first for chronological chart display.
-    private var chronologicalEntries: [FillUpEntry] {
-        entries.sorted { $0.date < $1.date }
-    }
-
-    /// Chronological entries that have price-per-gallon data, for the fuel cost chart.
-    private var priceDataEntries: [FillUpEntry] {
-        chronologicalEntries.filter { $0.pricePerGallon != nil }
-    }
-
-    /// Aggregate statistics derived from all entries.
-    ///
-    /// Only safe to access when `entries.count >= 2`.
-    private var stats: StatsSnapshot {
-        StatsSnapshot(entries: entries)
-    }
 }
 
 // MARK: - ChartShareImage
@@ -406,7 +398,9 @@ private struct FuelCostChartDescriptor: AXChartDescriptorRepresentable {
 
 // MARK: - StatsSnapshot
 
-/// A snapshot of aggregate statistics computed from a collection of fill-up entries.
+/// A snapshot of aggregate statistics and pre-sorted sequences computed from a collection of
+/// fill-up entries. Acts as the single caching boundary for `StatsView` — recomputed once per
+/// data change, not once per render.
 private struct StatsSnapshot {
 
     /// Total number of fill-up sessions.
@@ -436,7 +430,13 @@ private struct StatsSnapshot {
     /// `true` if at least one entry has price-per-gallon data.
     let hasPriceData: Bool
 
-    /// Computes aggregate statistics from the given entries.
+    /// Entries sorted oldest-first for chronological chart display.
+    let chronologicalEntries: [FillUpEntry]
+
+    /// Chronological entries that have price-per-gallon data, for the fuel cost chart.
+    let priceDataEntries: [FillUpEntry]
+
+    /// Computes aggregate statistics and pre-sorted sequences from the given entries.
     /// - Parameter entries: The entries to aggregate. Should contain at least two items.
     init(entries: [FillUpEntry]) {
         sessionCount = entries.count
@@ -451,6 +451,10 @@ private struct StatsSnapshot {
         totalFuelCost = costs.isEmpty ? nil : costs.reduce(0, +)
         hasPriceData = entries.contains { $0.pricePerGallon != nil }
         hasTruckReportedMPG = entries.contains { $0.truckReportedMPG != nil }
+
+        let sorted = entries.sorted { $0.date < $1.date }
+        chronologicalEntries = sorted
+        priceDataEntries = sorted.filter { $0.pricePerGallon != nil }
     }
 }
 
