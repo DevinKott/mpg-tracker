@@ -21,6 +21,9 @@ struct StatsView: View {
     @State private var showVehicleReportedMPG = true
     /// Cached aggregate statistics. Recomputed only when `entries` changes.
     @State private var stats = StatsSnapshot(entries: [])
+    /// Captured content width of the scroll view's LazyVStack, used by `renderImage` to
+    /// produce a correctly-sized export image without relying on `UIScreen`.
+    @State private var chartExportWidth: CGFloat = 0
 
     var body: some View {
         if entries.count < 2 {
@@ -54,6 +57,9 @@ struct StatsView: View {
                 fuelCostChartSection
             }
             .padding()
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.width
+            } action: { chartExportWidth = $0 }
         }
         .navigationTitle(String(localized: "Stats"))
         .onAppear {
@@ -131,6 +137,7 @@ struct StatsView: View {
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
+                .disabled(!showCalculatedMPG && !(stats.hasTruckReportedMPG && showVehicleReportedMPG))
                 .accessibilityLabel(String(localized: "Share MPG over time chart"))
                 .accessibilityHint(String(localized: "Exports the chart as an image you can share"))
             }
@@ -275,8 +282,11 @@ struct StatsView: View {
     }
 
     /// Renders a SwiftUI view to a `UIImage` at @3x scale for sharing.
+    ///
+    /// Uses `chartExportWidth` — captured from the live layout via `onGeometryChange` —
+    /// so `ImageRenderer` produces a full-width image without relying on `UIScreen`.
     private func renderImage<V: View>(from view: V) -> UIImage? {
-        let renderer = ImageRenderer(content: view)
+        let renderer = ImageRenderer(content: view.frame(width: chartExportWidth))
         renderer.scale = 3.0
         return renderer.uiImage
     }
