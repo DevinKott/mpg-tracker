@@ -112,6 +112,24 @@ struct StatsView: View {
                         value: cost.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
                     )
                 }
+                if let delta = stats.truckAccuracyDelta {
+                    let direction = delta >= 0
+                        ? String(localized: "overestimates")
+                        : String(localized: "underestimates")
+                    let pct = String(format: "%.1f", abs(delta))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(localized: "Your truck \(direction) MPG by \(pct)% on average"))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .accessibilityLabel(
+                                String(localized: "Vehicle-reported MPG accuracy: your truck \(direction) MPG by \(pct) percent on average")
+                            )
+                        Text(String(localized: "Based on \(stats.truckAccuracySampleCount) fill-up(s)"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 8)
+                }
             }
         }
     }
@@ -481,6 +499,13 @@ private struct StatsSnapshot {
     /// `true` if at least one entry has price-per-gallon data.
     let hasPriceData: Bool
 
+    /// Average percent delta of vehicle-reported MPG vs calculated MPG.
+    /// Positive = vehicle overestimates; negative = underestimates. `nil` if no qualifying entries.
+    let truckAccuracyDelta: Double?
+
+    /// Number of entries that contributed to `truckAccuracyDelta`.
+    let truckAccuracySampleCount: Int
+
     /// Entries sorted oldest-first for chronological chart display.
     let chronologicalEntries: [FillUpEntry]
 
@@ -502,6 +527,15 @@ private struct StatsSnapshot {
         totalFuelCost = costs.isEmpty ? nil : costs.reduce(0, +)
         hasPriceData = entries.contains { $0.pricePerGallon != nil }
         hasTruckReportedMPG = entries.contains { $0.truckReportedMPG != nil }
+
+        let reportedPairs = entries.filter { $0.truckReportedMPG != nil && $0.calculatedMPG > 0 }
+        truckAccuracySampleCount = reportedPairs.count
+        if reportedPairs.isEmpty {
+            truckAccuracyDelta = nil
+        } else {
+            let deltas = reportedPairs.map { ($0.truckReportedMPG! - $0.calculatedMPG) / $0.calculatedMPG * 100 }
+            truckAccuracyDelta = deltas.reduce(0, +) / Double(deltas.count)
+        }
 
         let sorted = entries.sorted { $0.date < $1.date }
         chronologicalEntries = sorted
