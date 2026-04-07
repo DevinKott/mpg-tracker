@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import Accessibility
+import LinkPresentation
 
 /// Displays summary statistics and trend charts for all recorded fill-up sessions.
 struct StatsView: View {
@@ -62,10 +63,10 @@ struct StatsView: View {
             stats = StatsSnapshot(entries: newEntries)
         }
         .sheet(item: $mpgShareImage) { share in
-            ActivityViewController(image: share.image)
+            ActivityViewController(image: share.image, title: share.title)
         }
         .sheet(item: $fuelCostShareImage) { share in
-            ActivityViewController(image: share.image)
+            ActivityViewController(image: share.image, title: share.title)
         }
     }
 
@@ -120,7 +121,7 @@ struct StatsView: View {
                     .accessibilityChartDescriptor(MPGChartDescriptor(entries: stats.chronologicalEntries))
                 Button {
                     if let image = renderImage(from: mpgChartView) {
-                        mpgShareImage = ChartShareImage(image: image)
+                        mpgShareImage = ChartShareImage(image: image, title: String(localized: "MPG Over Time"))
                     }
                 } label: {
                     Label(
@@ -167,7 +168,7 @@ struct StatsView: View {
                         )
                     Button {
                         if let image = renderImage(from: fuelCostChartView) {
-                            fuelCostShareImage = ChartShareImage(image: image)
+                            fuelCostShareImage = ChartShareImage(image: image, title: String(localized: "Cost Per Gallon Over Time"))
                         }
                     } label: {
                         Label(
@@ -288,18 +289,58 @@ struct StatsView: View {
 private struct ChartShareImage: Identifiable {
     let id = UUID()
     let image: UIImage
+    /// The chart title shown in the share sheet preview header.
+    let title: String
+}
+
+// MARK: - ChartImageItemSource
+
+/// Provides `LPLinkMetadata` to the share sheet so iOS displays a title and thumbnail
+/// preview and correctly identifies the shared item as an image.
+private final class ChartImageItemSource: NSObject, UIActivityItemSource {
+
+    private let image: UIImage
+    private let title: String
+
+    init(image: UIImage, title: String) {
+        self.image = image
+        self.title = title
+    }
+
+    func activityViewControllerPlaceholderItem(
+        _ activityViewController: UIActivityViewController
+    ) -> Any { image }
+
+    func activityViewController(
+        _ activityViewController: UIActivityViewController,
+        itemForActivityType activityType: UIActivity.ActivityType?
+    ) -> Any? { image }
+
+    func activityViewControllerLinkMetadata(
+        _ activityViewController: UIActivityViewController
+    ) -> LPLinkMetadata? {
+        let metadata = LPLinkMetadata()
+        metadata.title = title
+        let provider = NSItemProvider(object: image)
+        metadata.imageProvider = provider
+        metadata.iconProvider = provider
+        return metadata
+    }
 }
 
 // MARK: - ActivityViewController
 
-/// A thin UIKit bridge that presents a `UIActivityViewController` for sharing a `UIImage`.
+/// A UIKit bridge that presents a `UIActivityViewController` for sharing a chart `UIImage`.
 private struct ActivityViewController: UIViewControllerRepresentable {
 
     /// The image to share.
     let image: UIImage
+    /// The title shown in the share sheet preview header.
+    let title: String
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        let source = ChartImageItemSource(image: image, title: title)
+        return UIActivityViewController(activityItems: [source], applicationActivities: nil)
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
