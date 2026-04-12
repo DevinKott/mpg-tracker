@@ -30,7 +30,7 @@ struct EntryDetailView: View {
             dateSection
             deleteSection
         }
-        .navigationTitle(String(localized: "Fill-Up Detail"))
+        .navigationTitle(String(localized: "Entry Detail"))
         .navigationBarTitleDisplayMode(.inline)
         .overlay(alignment: .top) {
             if didSaveEdit { savedBanner }
@@ -38,14 +38,14 @@ struct EntryDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(String(localized: "Edit")) { isEditing = true }
-                    .accessibilityLabel(String(localized: "Edit this fill-up entry"))
+                    .accessibilityLabel(String(localized: "Edit this entry"))
             }
         }
         .sheet(isPresented: $isEditing) {
             EditEntrySheetView(entry: entry, onSaved: showSaveConfirmation)
         }
         .alert(
-            String(localized: "Delete this fill-up?"),
+            String(localized: "Delete this entry?"),
             isPresented: $showDeleteConfirmation
         ) {
             Button(String(localized: "Delete"), role: .destructive) {
@@ -104,7 +104,7 @@ struct EntryDetailView: View {
                 showDeleteConfirmation = true
             }
             .frame(maxWidth: .infinity, alignment: .center)
-            .accessibilityLabel(String(localized: "Delete this fill-up entry"))
+            .accessibilityLabel(String(localized: "Delete this entry"))
             .accessibilityHint(String(localized: "Opens a confirmation before deleting"))
         }
     }
@@ -219,7 +219,7 @@ private struct EditEntrySheetView: View {
                 requiredSection
                 optionalSection
             }
-            .navigationTitle(String(localized: "Edit Fill-Up"))
+            .navigationTitle(String(localized: "Edit Entry"))
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: focusedField) { oldValue, _ in
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -319,8 +319,8 @@ private struct EditEntrySheetView: View {
                 selection: $selectedDate,
                 displayedComponents: [.date, .hourAndMinute]
             )
-            .accessibilityLabel(String(localized: "Fill-up date and time"))
-            .accessibilityHint(String(localized: "The date and time this fill-up occurred"))
+            .accessibilityLabel(String(localized: "Entry date and time"))
+            .accessibilityHint(String(localized: "The date and time this entry occurred"))
         }
     }
 
@@ -359,7 +359,7 @@ private struct EditEntrySheetView: View {
 
             TextField(String(localized: "Notes"), text: $notesText)
                 .accessibilityLabel(String(localized: "Notes"))
-                .accessibilityHint(String(localized: "Optional free-text note about this fill-up"))
+                .accessibilityHint(String(localized: "Optional note for this entry"))
         }
     }
 

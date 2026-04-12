@@ -58,7 +58,7 @@ struct SettingsView: View {
                 exportCSV()
             }
             .accessibilityLabel(String(localized: "Export as CSV"))
-            .accessibilityHint(String(localized: "Generates a CSV file of all your fill-up entries and opens a share sheet"))
+            .accessibilityHint(String(localized: "Generates a CSV file of all your entries and opens a share sheet"))
 
             Button(String(localized: "Import from CSV")) {
                 isImporting = true
@@ -94,8 +94,8 @@ struct SettingsView: View {
     /// Brief confirmation shown after a clean (0 skipped) import.
     private var importBanner: some View {
         let label = importedCount == 1
-            ? String(localized: "Imported 1 fill-up")
-            : String(localized: "Imported \(importedCount) fill-ups")
+            ? String(localized: "Imported 1 entry")
+            : String(localized: "Imported \(importedCount) entries")
         return Text(label)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.white)
@@ -219,7 +219,7 @@ struct SettingsView: View {
 
         guard !result.entries.isEmpty else {
             alertTitle = String(localized: "Import Error")
-            alertMessage = String(localized: "No valid fill-up entries were found in the file.")
+            alertMessage = String(localized: "No valid entries were found in the file.")
             showAlert = true
             return
         }
@@ -234,8 +234,8 @@ struct SettingsView: View {
             let imported = result.entries.count
             let skipped = result.skippedCount
             let importedLine = imported == 1
-                ? String(localized: "Imported 1 fill-up.")
-                : String(localized: "Imported \(imported) fill-ups.")
+                ? String(localized: "Imported 1 entry.")
+                : String(localized: "Imported \(imported) entries.")
             let skippedLine = skipped == 1
                 ? String(localized: "1 row was skipped due to formatting errors.")
                 : String(localized: "\(skipped) rows were skipped due to formatting errors.")

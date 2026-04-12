@@ -60,7 +60,16 @@ struct AddEntryView: View {
             optionalFieldsSection
             saveSection
         }
-        .navigationTitle(String(localized: "Add Fill-Up"))
+        .navigationTitle(String(localized: "Add Entry"))
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if focusedField != nil {
+                    Button(String(localized: "Done")) {
+                        focusedField = nil
+                    }
+                }
+            }
+        }
         .onChange(of: focusedField) { oldValue, _ in
             withAnimation(.easeInOut(duration: 0.2)) {
                 if oldValue == .miles { milesFieldTouched = true }
@@ -219,15 +228,15 @@ struct AddEntryView: View {
                 text: $notes
             )
             .accessibilityLabel(String(localized: "Notes"))
-            .accessibilityHint(String(localized: "Optional free-text note about this fill-up"))
+            .accessibilityHint(String(localized: "Optional note for this entry"))
 
             DatePicker(
                 String(localized: "Date & Time"),
                 selection: $entryDate,
                 displayedComponents: [.date, .hourAndMinute]
             )
-            .accessibilityLabel(String(localized: "Fill-up date and time"))
-            .accessibilityHint(String(localized: "Defaults to now; adjust if this fill-up happened earlier"))
+            .accessibilityLabel(String(localized: "Entry date and time"))
+            .accessibilityHint(String(localized: "Defaults to now; adjust if this entry happened earlier"))
         }
     }
 
@@ -251,22 +260,22 @@ struct AddEntryView: View {
     /// Section containing the Save button.
     private var saveSection: some View {
         Section {
-            Button(String(localized: "Save Fill-Up")) {
+            Button(String(localized: "Save Entry")) {
                 saveEntry()
             }
             .disabled(!isSaveEnabled)
             .frame(maxWidth: .infinity, alignment: .center)
             .accessibilityLabel(
                 isSaveEnabled
-                    ? String(localized: "Save fill-up entry")
-                    : String(localized: "Save fill-up entry — enter miles and gallons first")
+                    ? String(localized: "Save entry")
+                    : String(localized: "Save entry — enter miles and gallons first")
             )
         }
     }
 
     /// Brief banner shown after a successful save.
     private var savedBanner: some View {
-        Text(String(localized: "Fill-up saved"))
+        Text(String(localized: "Entry saved"))
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
@@ -274,7 +283,7 @@ struct AddEntryView: View {
             .background(.green.gradient, in: Capsule())
             .padding(.top, 8)
             .transition(.move(edge: .top).combined(with: .opacity))
-            .accessibilityLabel(String(localized: "Fill-up saved successfully"))
+            .accessibilityLabel(String(localized: "Entry saved successfully"))
     }
 
     // MARK: - Helpers
@@ -310,6 +319,7 @@ struct AddEntryView: View {
 
     /// Clears all form fields back to their initial empty state.
     private func resetForm() {
+        focusedField = nil
         milesText = ""
         gallonsText = ""
         totalPriceText = ""

@@ -34,12 +34,12 @@ struct HistoryView: View {
     /// Prompt shown when no entries have been saved yet.
     private var emptyStateView: some View {
         ContentUnavailableView(
-            String(localized: "No Fill-Ups Yet"),
+            String(localized: "No Entries Yet"),
             systemImage: "fuelpump",
-            description: Text(String(localized: "Tap Add Entry to record your first fill-up."))
+            description: Text(String(localized: "Tap Add Entry to record your first entry."))
         )
         .navigationTitle(String(localized: "History"))
-        .accessibilityLabel(String(localized: "No fill-up entries. Tap Add Entry to get started."))
+        .accessibilityLabel(String(localized: "No entries. Tap Add Entry to get started."))
     }
 
     /// Scrollable list of all fill-up entries with multi-select support.
@@ -94,8 +94,8 @@ struct HistoryView: View {
         .accessibilityLabel(allSelected ? String(localized: "Deselect All") : String(localized: "Select All"))
         .accessibilityHint(
             allSelected
-                ? String(localized: "Deselects all fill-up entries")
-                : String(localized: "Selects all fill-up entries")
+                ? String(localized: "Deselects all entries")
+                : String(localized: "Selects all entries")
         )
     }
 
@@ -107,7 +107,7 @@ struct HistoryView: View {
         .disabled(selection.isEmpty)
         .accessibilityLabel(String(localized: "Delete selected entries"))
         .accessibilityHint(
-            String(localized: "Deletes \(selection.count) selected fill-up entries. This cannot be undone.")
+            String(localized: "Deletes \(selection.count) selected entries. This cannot be undone.")
         )
     }
 

@@ -96,3 +96,4 @@ Each fill-up session follows a simple loop:
 | MPGT-013 | AddEntryView re-parses all fields on every keystroke — computed properties for parsed values and isSaveEnabled re-run on every body evaluation triggered by text input. |
 | MPGT-009 | StatsSnapshot recomputed on every view render — replaced computed `stats` property with a `@State` stored property refreshed via `.onChange(of: entries)`. |
 | MPGT-010 | chronologicalEntries and priceDataEntries re-sorted redundantly — folded both into StatsSnapshot so the sort runs once per data change, not once per call site per render. |
+| MPGT-014 | No year-over-year MPG comparison — added a year-over-year chart below the existing MPG chart, plotting current and prior calendar year on a shared Jan–Dec axis with faded prior-year line and VoiceOver support. |
