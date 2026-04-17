@@ -298,7 +298,7 @@ struct StatsView: View {
                     }
                 }
                 if showVehicle {
-                    ForEach(stats.chronologicalEntries.filter { $0.truckReportedMPG != nil }) { entry in
+                    ForEach(stats.chronologicalEntries.filter { ($0.truckReportedMPG ?? 0) > 0 }) { entry in
                         LineMark(
                             x: .value(String(localized: "Date"), entry.date),
                             y: .value(String(localized: "Vehicle-Reported MPG"), entry.truckReportedMPG!)
@@ -553,7 +553,7 @@ private struct FuelCostChartDescriptor: AXChartDescriptorRepresentable {
     let entries: [FillUpEntry]
 
     func makeChartDescriptor() -> AXChartDescriptor {
-        let priceEntries = entries.filter { $0.pricePerGallon != nil }
+        let priceEntries = entries.filter { ($0.pricePerGallon ?? 0) > 0 }
         let dates = priceEntries.map { $0.date.formatted(date: .abbreviated, time: .omitted) }
         let prices = priceEntries.compactMap(\.pricePerGallon)
         let minPrice = prices.min() ?? 0
@@ -725,10 +725,10 @@ private struct StatsSnapshot {
 
         let costs = entries.compactMap(\.totalPricePaid)
         totalFuelCost = costs.isEmpty ? nil : costs.reduce(0, +)
-        hasPriceData = entries.contains { $0.pricePerGallon != nil }
-        hasTruckReportedMPG = entries.contains { $0.truckReportedMPG != nil }
+        hasPriceData = entries.contains { ($0.pricePerGallon ?? 0) > 0 }
+        hasTruckReportedMPG = entries.contains { ($0.truckReportedMPG ?? 0) > 0 }
 
-        let reportedPairs = entries.filter { $0.truckReportedMPG != nil && $0.calculatedMPG > 0 }
+        let reportedPairs = entries.filter { ($0.truckReportedMPG ?? 0) > 0 && $0.calculatedMPG > 0 }
         truckAccuracySampleCount = reportedPairs.count
         if reportedPairs.isEmpty {
             truckAccuracyDelta = nil
@@ -739,7 +739,7 @@ private struct StatsSnapshot {
 
         let sorted = entries.sorted { $0.date < $1.date }
         chronologicalEntries = sorted
-        priceDataEntries = sorted.filter { $0.pricePerGallon != nil }
+        priceDataEntries = sorted.filter { ($0.pricePerGallon ?? 0) > 0 }
 
         let cal = Calendar.current
         let currentYear = cal.component(.year, from: Date())
