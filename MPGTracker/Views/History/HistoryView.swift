@@ -29,6 +29,37 @@ struct HistoryView: View {
         }
     }
 
+    // MARK: - Grouping
+
+    /// Entries grouped by calendar month, newest section first.
+    ///
+    /// Each element is a `(key: String, entries: [FillUpEntry])` pair where
+    /// `key` is the formatted month/year label (e.g. "April 2026") and
+    /// `entries` is that month's fill-ups in reverse-chronological order.
+    private var groupedEntries: [(key: String, entries: [FillUpEntry])] {
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+
+        var dict: [DateComponents: [FillUpEntry]] = [:]
+        for entry in entries {
+            let comps = calendar.dateComponents([.year, .month], from: entry.date)
+            dict[comps, default: []].append(entry)
+        }
+
+        return dict
+            .sorted { lhs, rhs in
+                guard let ly = lhs.key.year, let lm = lhs.key.month,
+                      let ry = rhs.key.year, let rm = rhs.key.month else { return false }
+                return ly == ry ? lm > rm : ly > ry
+            }
+            .map { comps, sectionEntries in
+                let title = sectionEntries.first.map { formatter.string(from: $0.date) } ?? ""
+                let sorted = sectionEntries.sorted { $0.date > $1.date }
+                return (key: title, entries: sorted)
+            }
+    }
+
     // MARK: - Subviews
 
     /// Prompt shown when no entries have been saved yet.
@@ -42,15 +73,21 @@ struct HistoryView: View {
         .accessibilityLabel(String(localized: "No entries. Tap Add Entry to get started."))
     }
 
-    /// Scrollable list of all fill-up entries with multi-select support.
+    /// Scrollable list of all fill-up entries grouped by month, with multi-select support.
     private var entryList: some View {
         List(selection: $selection) {
-            ForEach(entries) { entry in
-                NavigationLink(value: entry) {
-                    FillUpEntryRow(entry: entry)
+            ForEach(groupedEntries, id: \.key) { section in
+                Section(header: Text(section.key)) {
+                    ForEach(section.entries) { entry in
+                        NavigationLink(value: entry) {
+                            FillUpEntryRow(entry: entry)
+                        }
+                    }
+                    .onDelete { offsets in
+                        deleteEntries(inSection: section.key, at: offsets)
+                    }
                 }
             }
-            .onDelete(perform: deleteEntries)
         }
         .environment(\.editMode, $editMode)
         .navigationTitle(String(localized: "History"))
@@ -144,10 +181,11 @@ struct HistoryView: View {
         editMode = .inactive
     }
 
-    /// Deletes entries at the given index set (swipe-to-delete).
-    private func deleteEntries(at offsets: IndexSet) {
+    /// Deletes entries at section-local offsets (swipe-to-delete).
+    private func deleteEntries(inSection key: String, at offsets: IndexSet) {
+        guard let section = groupedEntries.first(where: { $0.key == key }) else { return }
         for index in offsets {
-            modelContext.delete(entries[index])
+            modelContext.delete(section.entries[index])
         }
     }
 }
@@ -204,7 +242,7 @@ private struct FillUpEntryRow: View {
     let container = try! ModelContainer(for: FillUpEntry.self, configurations: config)
     let ctx = container.mainContext
     ctx.insert(FillUpEntry(date: Date(), milesDriven: 312.5, gallonsPumped: 12.8, totalPricePaid: 45.60, truckReportedMPG: 24.1))
-    ctx.insert(FillUpEntry(date: Date().addingTimeInterval(-86400 * 14), milesDriven: 280.0, gallonsPumped: 11.5, notes: "Highway trip"))
+    ctx.insert(FillUpEntry(date: Date().addingTimeInterval(-86400 * 45), milesDriven: 280.0, gallonsPumped: 11.5, notes: "Highway trip"))
     return NavigationStack {
         HistoryView()
     }

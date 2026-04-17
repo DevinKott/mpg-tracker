@@ -1,5 +1,31 @@
 # CLAUDE.md — Project Rules
 
+## Code Philosophy: Prefer Subtraction
+
+The default failure mode of AI-assisted coding is accretion — adding more code, 
+more layers, more abstractions, more files. Guard against this actively.
+
+### Before writing code
+- State the minimal change that solves the problem in one sentence.
+- Ask: can this be solved by *deleting* or *reusing* something instead?
+- Ask: am I adding this because it's needed now, or because it might be needed later?
+
+### While writing code
+- Prefer inline logic over new functions until the function is needed 3+ times.
+- Prefer editing an existing file over creating a new one.
+- Prefer fewer moving parts. A 50-line solution that's slightly repetitive 
+  beats a 100-line solution with a clean abstraction.
+
+### After writing code
+- Identify one thing that could be removed without breaking the solution.
+- If the diff is large, flag it and ask whether the scope was right.
+
+### Abstractions
+- Do not introduce a new abstraction layer unless there are at least 3 concrete 
+  use cases for it right now.
+- Naming things, creating interfaces, and adding indirection all have a cost. 
+  Only pay it when the benefit is immediate and clear.
+
 ## Meta
 - After every coding session that modifies the codebase, update this file to reflect the latest changes.
 - When a ticket is implemented and its file deleted, add an entry to the "Ticket History" section of `PROJECT.md` with the ticket number and a one-sentence description of the issue that was fixed.
@@ -119,7 +145,7 @@ For required fields where the Save button may be disabled, show an inline "Requi
 - `truckReportedMPG` is the SwiftData property name (schema-stable); all user-facing strings say "vehicle-reported MPG".
 - History list uses `@Query(sort: \FillUpEntry.date, order: .reverse)` and `NavigationLink(value:)` + `.navigationDestination(for: FillUpEntry.self)`.
 - `EntryDetailView` uses `@Bindable var entry: FillUpEntry`; editing is done via `EditEntrySheetView` (private struct in `EntryDetailView.swift`) which writes back to the bindable entry directly — `applyChanges()` explicitly recalculates `calculatedMPG` and `pricePerGallon` because SwiftData `@Model` accessors do not reliably trigger `didSet` observers when properties are mutated externally. After a successful save, `EditEntrySheetView` calls an `onSaved: () -> Void` callback before dismissing; `EntryDetailView` uses this to show a "Changes saved" banner via `didSaveEdit` / `showSaveConfirmation()` (same pattern as `AddEntryView`).
-- `HistoryView` supports swipe-to-delete (`onDelete`) and multi-select bulk delete via an Edit/Done toolbar toggle; `FillUpEntryRow` is a private struct in the same file that renders each list row.
+- `HistoryView` groups entries by calendar month via a `groupedEntries` computed property that returns `[(key: String, entries: [FillUpEntry])]` (newest month first). The list renders via a two-level `ForEach` + `Section(header:)` — outer loop over month groups, inner loop over entries per group. Swipe-to-delete uses section-local offsets resolved through `groupedEntries`; multi-select bulk delete operates on the flat `@Query` array and is unaffected by sectioning. `FillUpEntryRow` is a private struct in the same file that renders each list row.
 - `FillUpEntry` has an optional `notes: String?` property; it is displayed in `EntryDetailView` and editable in `EditEntrySheetView`.
 - `StatsView` caches all derived data in a `@State private var stats: StatsSnapshot` initialized on `.onAppear` and refreshed via `.onChange(of: entries)` — recomputation is limited to actual data changes, not every render. `StatsSnapshot` is the single caching boundary for the view: it holds aggregate scalar values AND pre-sorted/filtered sequences (`chronologicalEntries`, `priceDataEntries`). Any new derived sequence from `entries` should be added to `StatsSnapshot.init` rather than as a computed property on the view. `StatsSnapshot` also computes `truckAccuracyDelta: Double?` (average % delta of vehicle-reported vs calculated MPG; positive = overestimate, negative = underestimate; `nil` if no qualifying entries) and `truckAccuracySampleCount: Int`; these power the vehicle-reported MPG accuracy stat shown at the bottom of the Stats Summary with extra top padding. Charts use Swift Charts; chart export uses `ImageRenderer` + `UIActivityViewController` (private `ActivityViewController` bridging struct inside `StatsView.swift`); VoiceOver support via `AXChartDescriptorRepresentable` (`MPGChartDescriptor`, `FuelCostChartDescriptor`).
 - `StatsView` includes a year-over-year MPG chart (section label "Year-Over-Year MPG") placed below the MPG Over Time chart. It renders when `stats.currentYearPoints.count >= 2`. Current-year entries appear at full opacity; prior-year entries at 0.35 opacity; both share a Jan–Dec x-axis. `YearOverYearPoint` (private struct in `StatsView.swift`) carries `displayDate`, `mpg`, and `yearLabel`; prior-year dates are shifted to the current calendar year so both series share the same axis scale. `StatsSnapshot` holds `currentYearPoints: [YearOverYearPoint]`, `priorYearPoints: [YearOverYearPoint]`, and `yoyCurrentYear: Int`, all computed in `init`. VoiceOver is supported via `YearOverYearChartDescriptor`. Chart export uses the same `renderImage` + `ChartShareImage` pattern as the existing charts. A manual `legendDot` helper renders the chart legend as colored circles with year labels.
