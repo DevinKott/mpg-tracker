@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "Fuel Efficiency Tracker App Icon Light-01 1.png",
+      "filename" : "light.jpg",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "Fuel Efficiency Tracker App Icon Dark-01.png",
+      "filename" : "dark.jpg",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "Fuel Efficiency Tracker App Icon Light-01.png",
+      "filename" : "light 1.jpg",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
