@@ -50,6 +50,8 @@ struct AddEntryView: View {
     @State private var milesFieldTouched = false
     /// `true` once the gallons field has lost focus at least once while empty.
     @State private var gallonsFieldTouched = false
+    /// `true` while any keyboard or keypad is visible on screen.
+    @State private var isKeyboardVisible = false
 
     // MARK: - Body
 
@@ -63,12 +65,21 @@ struct AddEntryView: View {
         .navigationTitle(String(localized: "Add Entry"))
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if focusedField != nil {
+                if isKeyboardVisible {
                     Button(String(localized: "Done")) {
-                        focusedField = nil
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
                     }
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            isKeyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            isKeyboardVisible = false
         }
         .onChange(of: focusedField) { oldValue, _ in
             withAnimation(.easeInOut(duration: 0.2)) {
@@ -297,6 +308,10 @@ struct AddEntryView: View {
 
     /// Creates a `FillUpEntry`, inserts it into the model context, and resets the form.
     private func saveEntry() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil, from: nil, for: nil
+        )
         guard let miles = parsedMiles, let gallons = parsedGallons else { return }
 
         let totalPrice = Double(totalPriceText.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }

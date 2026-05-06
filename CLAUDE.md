@@ -131,6 +131,20 @@ For required fields where the Save button may be disabled, show an inline "Requi
 - **Placement:** Immediately below the field, inside a `VStack(alignment: .leading, spacing: 4)` shared with range-error captions
 - **Form row vs. inline caption:** In a SwiftUI `Form`/`List`, a conditional view appears as a separate row — it animates as a *row insertion*, which `List` manages outside the normal animation system. Wrapping the field and its caption in a `VStack` makes them one Form row; the caption is then a layout child, not a separate row, so `.transition` and `.animation` work as expected. Apply `.animation(.easeInOut(duration: 0.2), value: <condition>)` to the `VStack`, not the `Section`.
 
+### Global Keyboard Dismiss
+When a view needs the "Done" toolbar button to dismiss any active keyboard or keypad — including future fields added later — do **not** enumerate fields in a `@FocusState` enum. Instead:
+
+- Track visibility with `@State private var isKeyboardVisible = false`, driven by `.onReceive` on `UIResponder.keyboardWillShowNotification` / `keyboardWillHideNotification`.
+- Show the Done button conditionally on `isKeyboardVisible`.
+- Dismiss via `UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)` — works for any first responder, no per-field wiring needed.
+- Call the same resign in any save/confirm action so the keyboard always drops on commit.
+
+This pattern is distinct from `@FocusState`, which should still be used for dirty-state validation on required fields. The two mechanisms coexist: `@FocusState` drives validation hints; keyboard notifications drive the Done button.
+
+**Note:** Do not apply this to modal sheets (`EditEntrySheetView`). A sheet's Cancel/Save/swipe-to-dismiss controls already dismiss the keyboard as part of sheet teardown — a Done button would be redundant per Apple HIG.
+
+Pattern established in `AddEntryView`.
+
 ## Clean Code
 - Follow Clean Code principles: meaningful names, single responsibility, DRY, and clear intent.
 - Prefer clarity over cleverness.
@@ -152,3 +166,4 @@ For required fields where the Save button may be disabled, show an inline "Requi
 - `DataTransfer` (caseless enum in `Utilities/`) has pure static functions: `exportCSV`, `exportJSON`, `importCSV`. Uses a private `FillUpEntryDTO: Codable` for JSON; CSV uses ISO 8601 dates and RFC 4180 quoting. `importCSV` now `throws` (`DataTransfer.ImportError.missingRequiredColumns`) — if the header row is missing any of `date`, `milesDriven`, or `gallonsPumped`, the entire import is rejected before any rows are processed. Column lookup is name-based (header row → `[String: Int]` map), not positional, so reordered columns are handled correctly. Malformed data rows and out-of-range values (miles > 1,000 or gallons > 100) are counted as skipped, not silently dropped.
 - `SettingsView` (`Views/Settings/`) has a Data section (CSV export only, CSV import via `.fileImporter`) and a completed About section (app name + version from `Bundle.main`, purpose, privacy note, developer credit). JSON export code (`exportJSON`, `writeTempFile`) is kept in the file but not surfaced in the UI. Export writes a temp file and presents a share sheet via a private `ShareURL: Identifiable` wrapper and `.sheet(item: $shareURL)` (not `isPresented` — avoids a SwiftUI render-cycle race). Both `exportCSV` and `exportJSON` snapshot `entries` on the main thread then do all work in `Task.detached(priority: .userInitiated)`, hopping back to `MainActor` to set state. Export failure shows an alert ("Export Error" / "Export failed. Please try again."). Import feedback: clean import (0 skipped) shows a green banner; partial import shows an alert with both imported and skipped counts; all import errors show an alert. `RootView` uses `SettingsView` in the settings tab.
 - Units toggle (miles/km) is a planned TODO — not yet implemented.
+- `AddEntryView` uses the global keyboard dismiss pattern: `isKeyboardVisible` (driven by `UIResponder` keyboard notifications) controls the Done toolbar button; `UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), ...)` is called from both the Done button and `saveEntry()`. The `FormField` `@FocusState` enum is kept solely for dirty-state validation on required fields.
