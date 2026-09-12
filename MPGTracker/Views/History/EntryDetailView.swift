@@ -115,10 +115,9 @@ struct EntryDetailView: View {
     private var savedBanner: some View {
         Text(String(localized: "Changes saved"))
             .font(.subheadline.weight(.medium))
-            .foregroundStyle(.white)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(.green.gradient, in: Capsule())
+            .glassEffect(.regular.tint(.green), in: Capsule())
             .padding(.top, 8)
             .transition(.move(edge: .top).combined(with: .opacity))
             .accessibilityLabel(String(localized: "Changes saved successfully"))

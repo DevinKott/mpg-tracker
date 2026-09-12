@@ -162,7 +162,7 @@ struct StatsView: View {
                     )
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
                 .disabled(!showCalculatedMPG && !(stats.hasTruckReportedMPG && showVehicleReportedMPG))
                 .accessibilityLabel(String(localized: "Share MPG over time chart"))
                 .accessibilityHint(String(localized: "Exports the chart as an image you can share"))
@@ -222,7 +222,7 @@ struct StatsView: View {
                         )
                         .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.glass)
                     .accessibilityLabel(String(localized: "Share year-over-year MPG chart"))
                     .accessibilityHint(String(localized: "Exports the chart as an image you can share"))
                 }
@@ -254,7 +254,7 @@ struct StatsView: View {
                         )
                         .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.glass)
                     .accessibilityLabel(String(localized: "Share fuel cost per gallon chart"))
                     .accessibilityHint(String(localized: "Exports the chart as an image you can share"))
                 }
